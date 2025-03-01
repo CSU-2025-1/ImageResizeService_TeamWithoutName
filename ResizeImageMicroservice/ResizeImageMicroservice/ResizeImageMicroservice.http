@@ -1,0 +1,6 @@
+@ResizeImageMicroservice_HostAddress = http://localhost:5014
+
+GET {{ResizeImageMicroservice_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

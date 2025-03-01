@@ -1,0 +1,6 @@
+@NewImageFormatMicroservice_HostAddress = http://localhost:5152
+
+GET {{NewImageFormatMicroservice_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

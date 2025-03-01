@@ -1,0 +1,6 @@
+@ImageRotationMicroservice_HostAddress = http://localhost:5089
+
+GET {{ImageRotationMicroservice_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
