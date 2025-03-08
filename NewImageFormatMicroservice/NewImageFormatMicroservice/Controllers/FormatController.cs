@@ -5,28 +5,30 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Formats.Bmp;
-using Microsoft.AspNetCore.WebUtilities;
-using static System.Net.Mime.MediaTypeNames;
-using Image = SixLabors.ImageSharp.Image;
+using NewImageFormatMicroservice.Models;
 
-namespace ImageFormatMicroservice.Controllers;
+namespace NewImageFormatMicroservice.Controllers;
 
 [ApiController]
 [Route("api/format")]
 public class FormatController : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> ConvertImageFormat(
-        IFormFile image,
-        [FromForm] string format)
+    public async Task<IActionResult> ConvertImageFormat([FromForm] FormatRequest request)
     {
         try
         {
-            using var inputStream = image.OpenReadStream();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
+            using var inputStream = request.Image.OpenReadStream();
+
+            inputStream.Position = 0;
             var imageData = await Image.LoadAsync(inputStream);
 
-            IImageEncoder encoder = format.ToLower() switch
+            IImageEncoder encoder = request.Format.ToLower() switch
             {
                 "png" => new PngEncoder(),
                 "jpeg" => new JpegEncoder(),
@@ -38,7 +40,11 @@ public class FormatController : ControllerBase
             using var outputStream = new MemoryStream();
             await imageData.SaveAsync(outputStream, encoder);
 
-            return File(outputStream.ToArray(), $"image/{format}");
+            return File(outputStream.ToArray(), $"image/{request.Format}");
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
