@@ -6,6 +6,7 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Formats.Bmp;
 using NewImageFormatMicroservice.Models;
+using NewImageFormatMicroservice.Services;
 
 namespace NewImageFormatMicroservice.Controllers;
 
@@ -13,34 +14,28 @@ namespace NewImageFormatMicroservice.Controllers;
 [Route("api/format")]
 public class FormatController : ControllerBase
 {
+    private readonly IFormatService _FormatService;
+
+    public FormatController(IFormatService FormatService)
+    {
+        _FormatService = FormatService;
+    }
+
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ConvertImageFormat([FromForm] FormatRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            using var inputStream = request.Image.OpenReadStream();
-
-            inputStream.Position = 0;
-            var imageData = await Image.LoadAsync(inputStream);
-
-            IImageEncoder encoder = request.Format.ToLower() switch
-            {
-                "png" => new PngEncoder(),
-                "jpeg" => new JpegEncoder(),
-                "webp" => new WebpEncoder(),
-                "bmp" => new BmpEncoder(),
-                _ => throw new ArgumentException("Unsupported format")
-            };
-
-            using var outputStream = new MemoryStream();
-            await imageData.SaveAsync(outputStream, encoder);
-
-            return File(outputStream.ToArray(), $"image/{request.Format}");
+            byte[] convertedImageBytes = await _FormatService.ConvertFormatAsync(request.Image, request.Format);
+            return File(convertedImageBytes, $"image/{request.Format}");
         }
         catch (ArgumentException ex)
         {
