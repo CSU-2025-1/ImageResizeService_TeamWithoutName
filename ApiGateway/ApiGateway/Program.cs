@@ -1,4 +1,6 @@
 
+using ApiGateway.Services;
+
 namespace ApiGateway
 {
     public class Program
@@ -8,6 +10,7 @@ namespace ApiGateway
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddScoped<IImageProcessingService, ImageProcessingService>();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
