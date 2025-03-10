@@ -13,6 +13,8 @@ namespace ApiGateway.Models
         [Range(1, int.MaxValue, ErrorMessage = "Height must be at least 1 pixel")]
         public int? Height { get; set; }
 
+        public bool PreserveAspectRatio { get; set; }
+
         [Range(-360, 360, ErrorMessage = "Rotation angle must be between -360 and 360 degrees")]
         public double? Angle { get; set; }
 

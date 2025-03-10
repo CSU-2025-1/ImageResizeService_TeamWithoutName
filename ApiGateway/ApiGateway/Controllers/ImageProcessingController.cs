@@ -1,7 +1,7 @@
 ﻿using ApiGateway.Models;
+using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
 using SixLabors.ImageSharp; 
-using SixLabors.ImageSharp.Formats;
 
 namespace ApiGateway.Controllers
 {
@@ -9,87 +9,57 @@ namespace ApiGateway.Controllers
     [Route("api/images")]
     public class ImageProcessingController : ControllerBase
     {
-        private readonly HttpClient _client = new HttpClient();
+        private readonly ILogger<ImageProcessingController> _logger;
+        private readonly IImageProcessingService _imageService;
 
-        private readonly string _resizeUrl;
-        private readonly string _rotateUrl;
-        private readonly string _formatUrl;
-
-        public ImageProcessingController(IConfiguration config)
+        public ImageProcessingController(ILogger<ImageProcessingController> logger, IImageProcessingService imageService)
         {
-            _resizeUrl = config["Microservices:Resize"];
-            _rotateUrl = config["Microservices:Rotate"];
-            _formatUrl = config["Microservices:Format"];
+            _logger = logger;
+            _imageService = imageService;
         }
 
         [HttpPost]
-        public async Task<IActionResult> ProcessImage([FromForm] ImageProcessingRequest request)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> ResizeImage([FromForm] ImageProcessingRequest request)
         {
+            if (!ModelState.IsValid)
+            {
+                foreach (var error in ModelState)
+                {
+                    foreach (var modelError in error.Value.Errors)
+                    {
+                        _logger.LogWarning($"Validation error for {error.Key}: {modelError.ErrorMessage}");
+                    }
+                }
+                return BadRequest(ModelState);
+            }
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
+                using var imageStream = request.Image.OpenReadStream();
+                var imageFormat = Image.DetectFormat(imageStream);
 
-                byte[] imageBytes;
-                IImageFormat imageFormat;
-
-                using (var ms = new MemoryStream())
-                {
-                    await request.Image.CopyToAsync(ms);
-                    imageBytes = ms.ToArray();
-
-                    ms.Position = 0;
-                    imageFormat = Image.DetectFormat(ms);
-                }
-
-                if (request.Width.HasValue || request.Height.HasValue)
-                {
-                    imageBytes = await ProcessStep(_resizeUrl, imageBytes, new
-                    {
-                        width = request.Width,
-                        height = request.Height
-                    });
-                }
-
-                if (request.Angle.HasValue)
-                {
-                    imageBytes = await ProcessStep(_rotateUrl, imageBytes, new
-                    {
-                        angle = request.Angle.Value
-                    });
-                }
+                byte[] processingImageBytes = await _imageService.ProcessingImageAsync(
+                    request.Image,
+                    request.Width,
+                    request.Height,
+                    request.PreserveAspectRatio,
+                    request.Angle,
+                    request.Format
+                    );
 
                 if (!string.IsNullOrEmpty(request.Format))
                 {
-                    imageBytes = await ProcessStep(_formatUrl, imageBytes, new
-                    {
-                        format = request.Format
-                    });
+                    return File(processingImageBytes, $"image/{request.Format.ToLower()}");
                 }
-
-                return File(imageBytes, $"image/{imageFormat.Name.ToLower()}");
+                return File(processingImageBytes, $"image/{imageFormat.Name.ToLower()}");
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return StatusCode(500, $"Processing failed: {ex.Message}");
+                _logger.LogError(e, "Error apigateway image in controller.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error processing the image.");
             }
-        }
-
-        private async Task<byte[]> ProcessStep(string url, byte[] image, object parameters)
-        {
-            using var content = new MultipartFormDataContent();
-            content.Add(new ByteArrayContent(image), "image", "image");
-
-            foreach (var prop in parameters.GetType().GetProperties())
-            {
-                content.Add(new StringContent(prop.GetValue(parameters)?.ToString()), prop.Name);
-            }
-
-            var response = await _client.PostAsync(url, content);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsByteArrayAsync();
         }
     }
 }
