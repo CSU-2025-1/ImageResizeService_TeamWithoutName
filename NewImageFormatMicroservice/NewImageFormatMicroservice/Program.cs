@@ -1,4 +1,6 @@
 
+using NewImageFormatMicroservice.Services;
+
 namespace NewImageFormatMicroservice
 {
     public class Program
@@ -13,6 +15,9 @@ namespace NewImageFormatMicroservice
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddScoped<IFormatService, FormatService>();
+
 
             var app = builder.Build();
 
