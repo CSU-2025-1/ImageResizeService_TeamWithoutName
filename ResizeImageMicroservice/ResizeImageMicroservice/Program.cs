@@ -1,4 +1,6 @@
 
+using ResizeImageMicroservice.Services;
+
 namespace ResizeImageMicroservice
 {
     public class Program
@@ -8,6 +10,7 @@ namespace ResizeImageMicroservice
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddScoped<IImageResizeService, ImageResizeService>();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
