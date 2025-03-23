@@ -1,0 +1,31 @@
+services:
+  app: #Определяет сервис с именем app
+    build:
+      context: . #Указывает контекст сборки (текущая директория).
+      dockerfile: Dockerfile #Указывает путь к Dockerfile
+    ports:
+      - "5000:5000" #Порт 5000 внутри контейнера будет доступен на порту 5000 хоста
+    depends_on: #Указывает, что сервис app зависит от сервисов redis и mongodb. Они Указывает, что сервис app зависит от сервисов redis и mongodb
+      - redis
+      - mongodb
+    volumes: #Создает том для хранения данных
+      - ./images:/app/images  
+
+  redis:
+    image: "redis:alpine" #Использует официальный образ Redis
+    ports:
+      - "6379:6379"
+
+  mongodb:
+    image: "mongo:6.0" #Использует официальный образ MongoDB
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db ##Создает том для хранения данных MongoDB
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root #Имя пользователя для администратора MongoDB
+      - MONGO_INITDB_ROOT_PASSWORD=example #Пароль для администратора MongoDB
+      - MONGO_INITDB_DATABASE=ImageDatabase #Имя базы данных, которая будет создана при инициализации
+
+volumes:
+  mongo-data: #Определяет тома, которые будут использоваться в сервисах
