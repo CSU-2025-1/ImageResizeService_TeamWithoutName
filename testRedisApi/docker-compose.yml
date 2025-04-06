@@ -4,12 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5057:80"
     depends_on:
       - redis
       - mongodb
-    volumes:
-      - ./images:/app/images  
+    environment:
+      - REDIS_HOST=redis
+      - MONGO_HOST=mongodb
 
   redis:
     image: "redis:alpine"
