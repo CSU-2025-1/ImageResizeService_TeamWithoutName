@@ -1,14 +1,16 @@
-using ApiGateway.Models.Kafka;
-using ApiGateway.Services;
 using Confluent.Kafka;
+using MessageRouter.Model;
+using MessageRouter.Services;
 
-namespace ApiGateway
+namespace MessageRouter
 {
     public class Program
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            var builder = Host.CreateApplicationBuilder(args);
+
+            builder.Services.AddLogging();
 
             builder.Services.AddSingleton<IProducer<Null, ImageMessage>>(sp =>
             {
@@ -35,34 +37,31 @@ namespace ApiGateway
                 return producerBuilder.Build();
             });
 
-
-            builder.Services.AddScoped<IProducerService, ProducerService>();
-
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            var app = builder.Build();
-
-            /*// Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            builder.Services.AddSingleton<IConsumer<Null, ImageMessage>>(sp =>
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }*/ //TODO убрать в финале
+                var configuration = sp.GetRequiredService<IConfiguration>();
+                var logger = sp.GetRequiredService<ILogger<IConsumer<Null, ImageMessage>>>();
+                var bootstrapServers = configuration["Kafka:BootstrapServers"] ?? throw new InvalidOperationException("Kafka:BootstrapServers not configured in appsettings.");
+                var groupId = configuration["Kafka:GroupId"] ?? throw new InvalidOperationException("Kafka:GroupId not configured in appsettings.");
 
-            app.UseSwagger();
-            app.UseSwaggerUI();
+                var config = new ConsumerConfig
+                {
+                    BootstrapServers = bootstrapServers,
+                    GroupId = groupId
+                };
 
-            app.UseHttpsRedirection();
+                var consumerBuilder = new ConsumerBuilder<Null, ImageMessage>(config)
+                .SetValueDeserializer(new ImageMessageDeserializer(sp.GetRequiredService<ILogger<ImageMessageDeserializer>>()));
 
-            app.UseAuthorization();
+                return consumerBuilder.Build();
+            });
 
+            builder.Services.AddHostedService<ConsumerService>();
+            builder.Services.AddSingleton<IImageProcessingService, ImageProcessingService>();
+            builder.Services.AddSingleton<IProducerService, ProducerService>();
 
-            app.MapControllers();
-
-            app.Run();
+            var host = builder.Build();
+            host.Run();
         }
     }
 }
