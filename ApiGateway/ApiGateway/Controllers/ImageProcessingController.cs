@@ -1,7 +1,8 @@
-﻿using ApiGateway.Models;
+﻿using ApiGateway.Models.Kafka;
+using ApiGateway.Models;
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
-using SixLabors.ImageSharp; 
+using NUlid;
 
 namespace ApiGateway.Controllers
 {
@@ -10,16 +11,16 @@ namespace ApiGateway.Controllers
     public class ImageProcessingController : ControllerBase
     {
         private readonly ILogger<ImageProcessingController> _logger;
-        private readonly IImageProcessingService _imageService;
+        private readonly IProducerService _imageService;
 
-        public ImageProcessingController(ILogger<ImageProcessingController> logger, IImageProcessingService imageService)
+        public ImageProcessingController(ILogger<ImageProcessingController> logger, IProducerService imageService)
         {
             _logger = logger;
             _imageService = imageService;
         }
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> ResizeImage([FromForm] ImageProcessingRequest request)
@@ -37,29 +38,47 @@ namespace ApiGateway.Controllers
             }
             try
             {
-                using var imageStream = request.Image.OpenReadStream();
-                var imageFormat = Image.DetectFormat(imageStream);
-
-                byte[] processingImageBytes = await _imageService.ProcessingImageAsync(
-                    request.Image,
-                    request.Width,
-                    request.Height,
-                    request.PreserveAspectRatio,
-                    request.Angle,
-                    request.Format
-                    );
-
-                if (!string.IsNullOrEmpty(request.Format))
+                var convertedImage = request.Image.ConvertToBase64(_logger);
+                if(convertedImage.Result == null)
                 {
-                    return File(processingImageBytes, $"image/{request.Format.ToLower()}");
+                    return StatusCode(StatusCodes.Status500InternalServerError, "Error with image.");
                 }
-                return File(processingImageBytes, $"image/{imageFormat.Name.ToLower()}");
+
+                var imageMessage = new ImageMessage
+                {
+                    Id = Ulid.NewUlid().ToString(),
+                    Image = convertedImage.Result,
+                    Height = request.Height ?? -1,
+                    Width = request.Width ?? -1,
+                    PreserveAspectRatio = request.PreserveAspectRatio,
+                    Angle = request.Angle ?? 361,
+                    Format = request.Format
+                };
+                imageMessage.SetStep();
+
+                bool processingImageBytes = await _imageService.SendImageAsync(imageMessage);
+
+                if (processingImageBytes)
+                {
+                    return Ok();
+                } else
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, "Error send the image.");
+                }
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Error apigateway image in controller.");
+                throw e;
                 return StatusCode(StatusCodes.Status500InternalServerError, "Error processing the image.");
             }
         }
+
+        /*[HttpGet("GetImage")] // Добавлен атрибут маршрута
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
+        public IActionResult GetImage()
+        {
+            //TODO вытягивание из бд
+        }*/
     }
 }
