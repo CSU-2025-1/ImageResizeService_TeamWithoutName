@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+  kafka:
+    build:
+      context: ./Kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "9094:9094"
+      - "9999:9999"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093,EXTERNAL://host.docker.internal:9094"
+    volumes:
+      - kafka_data:/opt/kafka/data
+    networks:
+      - mynetwork
+    
+  
+  api_gateway:
+    build:
+      context: ./ApiGateway/ApiGateway
+    container_name: api_gateway
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50051:8080
+    networks:
+      - mynetwork
+
+  resizer_image:
+    build:
+      context: ./ResizeImageMicroservice/ResizeImageMicroservice
+    container_name: resizer_image
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50052:8080
+    networks:
+      - mynetwork
+
+  rotator_image:
+    build:
+      context: ./ImageRotationMicroservice/ImageRotationMicroservice
+    container_name: rotator_image
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50053:8080
+    networks:
+      - mynetwork
+
+  message_router:
+    build:
+      context: ./MessageRouter/MessageRouter
+    container_name: message_router
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50054:8080
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
+    
+volumes:
+  kafka_data:

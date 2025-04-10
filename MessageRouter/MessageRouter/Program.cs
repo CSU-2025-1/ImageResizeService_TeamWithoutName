@@ -1,16 +1,13 @@
-
 using Confluent.Kafka;
-using ResizeImageMicroservice.Kafka.Models;
-using ResizeImageMicroservice.Kafka.Services;
-using ResizeImageMicroservice.Services;
+using MessageRouter.Model;
+using MessageRouter.Services;
 
-namespace ResizeImageMicroservice
+namespace MessageRouter
 {
     public class Program
     {
         public static void Main(string[] args)
         {
-            //var builder = WebApplication.CreateBuilder(args);
             var builder = Host.CreateApplicationBuilder(args);
 
             builder.Services.AddLogging();
@@ -18,7 +15,7 @@ namespace ResizeImageMicroservice
             builder.Services.AddSingleton<IProducer<Null, ImageMessage>>(sp =>
             {
                 var configuration = sp.GetRequiredService<IConfiguration>();
-                var logger = sp.GetRequiredService<ILogger<ProducerService>>();
+                var logger = sp.GetRequiredService<ILogger<IProducer<Null, ImageMessage>>>();
                 var bootstrapServers = configuration["Kafka:BootstrapServers"] ?? throw new InvalidOperationException("Kafka:BootstrapServers not configured in appsettings.");
                 var maxRequestSizeString = configuration["Kafka:MaxRequestSize"];
                 int maxRequestSize;
@@ -43,7 +40,7 @@ namespace ResizeImageMicroservice
             builder.Services.AddSingleton<IConsumer<Null, ImageMessage>>(sp =>
             {
                 var configuration = sp.GetRequiredService<IConfiguration>();
-                var logger = sp.GetRequiredService<ILogger<ConsumerService>>(); // Or just ILogger
+                var logger = sp.GetRequiredService<ILogger<IConsumer<Null, ImageMessage>>>();
                 var bootstrapServers = configuration["Kafka:BootstrapServers"] ?? throw new InvalidOperationException("Kafka:BootstrapServers not configured in appsettings.");
                 var groupId = configuration["Kafka:GroupId"] ?? throw new InvalidOperationException("Kafka:GroupId not configured in appsettings.");
 
@@ -59,33 +56,9 @@ namespace ResizeImageMicroservice
                 return consumerBuilder.Build();
             });
 
-
             builder.Services.AddHostedService<ConsumerService>();
-            builder.Services.AddSingleton<IImageResizeService, ImageResizeService>();
+            builder.Services.AddSingleton<IImageProcessingService, ImageProcessingService>();
             builder.Services.AddSingleton<IProducerService, ProducerService>();
-
-            //builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            //builder.Services.AddEndpointsApiExplorer();
-            //builder.Services.AddSwaggerGen();
-
-            /*var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();*/
 
             var host = builder.Build();
             host.Run();

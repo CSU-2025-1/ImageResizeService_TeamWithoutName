@@ -1,4 +1,5 @@
-
+using ApiGateway.Models.Kafka;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using ApiGateway.Authentication.Service;
 using ApiGateway.Services;
@@ -15,7 +16,35 @@ namespace ApiGateway
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // –Â„ËÒÚ‡ˆËˇ MongoDB
+            builder.Services.AddSingleton<IProducer<Null, ImageMessage>>(sp =>
+            {
+                var configuration = sp.GetRequiredService<IConfiguration>();
+                var logger = sp.GetRequiredService<ILogger<IProducer<Null, ImageMessage>>>();
+                var bootstrapServers = configuration["Kafka:BootstrapServers"] ?? throw new InvalidOperationException("Kafka:BootstrapServers not configured in appsettings.");
+                var maxRequestSizeString = configuration["Kafka:MaxRequestSize"];
+                int maxRequestSize;
+                if (string.IsNullOrEmpty(maxRequestSizeString) || !int.TryParse(maxRequestSizeString, out maxRequestSize))
+                {
+                    maxRequestSize = 10485760;
+                    logger.LogWarning("Kafka:MaxRequestSize not configured or invalid. Using default value: {MaxRequestSize}", maxRequestSize);
+                }
+
+                var config = new ProducerConfig
+                {
+                    BootstrapServers = bootstrapServers,
+                    MessageMaxBytes = maxRequestSize
+                };
+
+                var producerBuilder = new ProducerBuilder<Null, ImageMessage>(config)
+                .SetValueSerializer(new ImageMessageSerializer(sp.GetRequiredService<ILogger<ImageMessageSerializer>>()));
+
+                return producerBuilder.Build();
+            });
+
+
+            builder.Services.AddScoped<IProducerService, ProducerService>();
+          
+            // √ê√•√£√®√±√≤√∞√†√∂√®√ø MongoDB
             var mongoClient = new MongoClient(builder.Configuration.GetConnectionString("MongoDB"));
             builder.Services.AddSingleton<IMongoClient>(mongoClient);
             builder.Services.AddScoped<IMongoDatabase>(sp =>
@@ -52,12 +81,12 @@ namespace ApiGateway
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            // Õ‡ÒÚÓÈÍ‡ Swagger Ò ÔÓ‰‰ÂÊÍÓÈ JWT
+            // √ç√†√±√≤√∞√Æ√©√™√† Swagger √± √Ø√Æ√§√§√•√∞√¶√™√Æ√© JWT
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "API Gateway", Version = "v1" });
 
-                // ƒÓ·‡‚ÎÂÌËÂ ÔÓ‰‰ÂÊÍË JWT ‚ Swagger
+                // √Ñ√Æ√°√†√¢√´√•√≠√®√• √Ø√Æ√§√§√•√∞√¶√™√® JWT √¢ Swagger
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -85,12 +114,15 @@ namespace ApiGateway
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            /*// Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
+            }*/ //TODO √≥√°√∞√†√≤√º √¢ √¥√®√≠√†√´√•
+
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseHttpsRedirection();
             app.UseAuthentication();
