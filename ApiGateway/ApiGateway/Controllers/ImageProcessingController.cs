@@ -1,6 +1,7 @@
 ﻿using ApiGateway.Models.Kafka;
 using ApiGateway.Models;
 using ApiGateway.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NUlid;
 
@@ -8,6 +9,7 @@ namespace ApiGateway.Controllers
 {
     [ApiController]
     [Route("api/images")]
+    [Authorize]
     public class ImageProcessingController : ControllerBase
     {
         private readonly ILogger<ImageProcessingController> _logger;
