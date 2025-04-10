@@ -1,10 +1,5 @@
 ﻿using MessageRouter.Model;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MessageRouter.Services
 {
@@ -25,26 +20,19 @@ namespace MessageRouter.Services
         {
             try
             {
-                if (imageMessage.Width != -1 || imageMessage.Height != -1)
+                if (imageMessage.IsNeedResize)
                 {
                     bool isSent = await _producerService.SendImageMessage(TopicName.ResizerImage, imageMessage);
                     return isSent;
                 }
 
-                if (imageMessage.Angle != 361)
+                if (imageMessage.IsNeedRotation)
                 {
                     bool isSent = await _producerService.SendImageMessage(TopicName.RotatorImage, imageMessage);
                     return isSent;
                 }
 
-                if (imageMessage.Format != null)
-                {
-                    bool isSent = await _producerService.SendImageMessage(TopicName.FormatorImage, imageMessage);
-                    return isSent;
-                }
-
-                //_resultsQueue.Enqueue(imageMessage);
-                _logger.LogInformation("Image done");
+                _logger.LogInformation($"Image {imageMessage.Id} done");
 
                 return false;
             }
@@ -54,12 +42,5 @@ namespace MessageRouter.Services
                 throw;
             }
         }
-
-        /*public ImageMessage GetResult()
-        {
-            ImageMessage result;
-            _resultsQueue.TryDequeue(out result);
-            return result;
-        }*/
     }
 }

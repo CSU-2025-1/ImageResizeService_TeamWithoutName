@@ -52,13 +52,17 @@ namespace ImageRotationMicroservice.Kafka.Services
                         bool answerFromProducer = await _producerService.SendToImageResized(
                             new ImageMessage
                             {
+                                Id = imageMessage.Id,
                                 Image = Convert.ToBase64String(resizedImageBytes),
                                 Width = imageMessage.Width,
                                 Height = imageMessage.Height,
                                 PreserveAspectRatio = imageMessage.PreserveAspectRatio,
                                 Angle = 361,
-                                Format = imageMessage.Format
-                            });
+                                Format = imageMessage.Format,
+                                IsNeedResize = imageMessage.IsNeedResize,
+                                IsNeedRotation = false
+                            }
+                        );
 
                         if (!answerFromProducer)
                         {

@@ -54,13 +54,17 @@ namespace ResizeImageMicroservice.Kafka.Services
 
                         bool answerFromProducer = await _producerService.SendToImageResized(
                             new ImageMessage {
+                                Id = imageMessage.Id,
                                 Image = Convert.ToBase64String(resizedImageBytes),
                                 Width = -1,
                                 Height = -1,
                                 PreserveAspectRatio = imageMessage.PreserveAspectRatio,
                                 Angle = imageMessage.Angle,
-                                Format = imageMessage.Format
-                                });
+                                Format = imageMessage.Format,
+                                IsNeedResize = false,
+                                IsNeedRotation = imageMessage.IsNeedRotation
+                            }
+                        );
 
                         if (!answerFromProducer)
                         {

@@ -1,9 +1,8 @@
 ﻿using ApiGateway.Models.Kafka;
 using ApiGateway.Models;
 using ApiGateway.Services;
-using Confluent.Kafka;
 using Microsoft.AspNetCore.Mvc;
-using SixLabors.ImageSharp; 
+using NUlid;
 
 namespace ApiGateway.Controllers
 {
@@ -45,16 +44,19 @@ namespace ApiGateway.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError, "Error with image.");
                 }
 
-                bool processingImageBytes = await _imageService.SendImageAsync(
-                    new ImageMessage
-                    {
-                        Image = convertedImage.Result,
-                        Height = request.Height ?? -1,
-                        Width = request.Width ?? -1,
-                        PreserveAspectRatio = request.PreserveAspectRatio,
-                        Angle = request.Angle ?? 361,
-                        Format = request.Format
-                    });
+                var imageMessage = new ImageMessage
+                {
+                    Id = Ulid.NewUlid().ToString(),
+                    Image = convertedImage.Result,
+                    Height = request.Height ?? -1,
+                    Width = request.Width ?? -1,
+                    PreserveAspectRatio = request.PreserveAspectRatio,
+                    Angle = request.Angle ?? 361,
+                    Format = request.Format
+                };
+                imageMessage.SetStep();
+
+                bool processingImageBytes = await _imageService.SendImageAsync(imageMessage);
 
                 if (processingImageBytes)
                 {
