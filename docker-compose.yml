@@ -24,6 +24,9 @@ services:
     container_name: api_gateway
     depends_on:
       - kafka
+      - mongo-primary
+      - mongo-secondary1
+      - mongo-secondary2
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
     ports:
@@ -39,6 +42,7 @@ services:
       - kafka
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      MONGODB_CONNECTION: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/Users"
     ports:
       - 50052:8080
     networks:
@@ -67,6 +71,43 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
     ports:
       - 50054:8080
+    networks:
+      - mynetwork
+
+  mongo-primary:
+    image: mongo:6.0
+    container_name: mongo-primary
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo/primary:/data/db
+      - ./mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    command: mongod --replSet rs0 --bind_ip_all
+    networks:
+      - mynetwork
+
+  mongo-secondary1:
+    image: mongo:6.0
+    container_name: mongo-secondary1
+    restart: always
+    volumes:
+      - ./mongo/secondary1:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    depends_on:
+      - mongo-primary
+    networks:
+      - mynetwork
+
+  mongo-secondary2:
+    image: mongo:6.0
+    container_name: mongo-secondary2
+    restart: always
+    volumes:
+      - ./mongo/secondary2:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    depends_on:
+      - mongo-primary
     networks:
       - mynetwork
 

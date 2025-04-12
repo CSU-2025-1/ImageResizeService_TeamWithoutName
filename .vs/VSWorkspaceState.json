@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\ApiGateway",
+    "\\ApiGateway\\ApiGateway",
+    "\\ApiGateway\\ApiGateway\\Controllers",
+    "\\ApiGateway\\ApiGateway\\Models",
+    "\\ApiGateway\\ApiGateway\\Properties",
+    "\\ApiGateway\\ApiGateway\\Services",
+    "\\mongo"
+  ],
+  "SelectedNode": "\\ApiGateway\\ApiGateway\\Controllers\\ImageProcessingController.cs",
+  "PreviewInSolutionExplorer": false
+}
