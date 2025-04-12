@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  mongo-primary:
+    image: mongo:6.0
+    container_name: mongo-primary
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo/primary:/data/db
+      - ./mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    command: mongod --replSet rs0 --bind_ip_all
+
+  mongo-secondary1:
+    image: mongo:6.0
+    container_name: mongo-secondary1
+    restart: always
+    volumes:
+      - ./mongo/secondary1:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    depends_on:
+      - mongo-primary
+
+  mongo-secondary2:
+    image: mongo:6.0
+    container_name: mongo-secondary2
+    restart: always
+    volumes:
+      - ./mongo/secondary2:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    depends_on:
+      - mongo-primary
+      
+  api-gateway:
+    build:
+      context: ./ApiGateway/ApiGateway
+    container_name: api_gateway
+    ports:
+      - 50051:8080
+    environment:
+      MONGODB_CONNECTION: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/Users"
+    depends_on:
+      - mongo-primary
+      - mongo-secondary1
+      - mongo-secondary2
+      
