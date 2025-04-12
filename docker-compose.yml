@@ -1,6 +1,79 @@
-version: '3.8'
+version: "3.9"
 
 services:
+  kafka:
+    build:
+      context: ./Kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "9094:9094"
+      - "9999:9999"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093,EXTERNAL://host.docker.internal:9094"
+    volumes:
+      - kafka_data:/opt/kafka/data
+    networks:
+      - mynetwork
+    
+  
+  api_gateway:
+    build:
+      context: ./ApiGateway/ApiGateway
+    container_name: api_gateway
+    depends_on:
+      - kafka
+      - mongo-primary
+      - mongo-secondary1
+      - mongo-secondary2
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50051:8080
+    networks:
+      - mynetwork
+
+  resizer_image:
+    build:
+      context: ./ResizeImageMicroservice/ResizeImageMicroservice
+    container_name: resizer_image
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      MONGODB_CONNECTION: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/Users"
+    ports:
+      - 50052:8080
+    networks:
+      - mynetwork
+
+  rotator_image:
+    build:
+      context: ./ImageRotationMicroservice/ImageRotationMicroservice
+    container_name: rotator_image
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50053:8080
+    networks:
+      - mynetwork
+
+  message_router:
+    build:
+      context: ./MessageRouter/MessageRouter
+    container_name: message_router
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50054:8080
+    networks:
+      - mynetwork
+
   mongo-primary:
     image: mongo:6.0
     container_name: mongo-primary
@@ -11,6 +84,8 @@ services:
       - ./mongo/primary:/data/db
       - ./mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     command: mongod --replSet rs0 --bind_ip_all
+    networks:
+      - mynetwork
 
   mongo-secondary1:
     image: mongo:6.0
@@ -21,6 +96,8 @@ services:
     command: mongod --replSet rs0 --bind_ip_all
     depends_on:
       - mongo-primary
+    networks:
+      - mynetwork
 
   mongo-secondary2:
     image: mongo:6.0
@@ -31,17 +108,12 @@ services:
     command: mongod --replSet rs0 --bind_ip_all
     depends_on:
       - mongo-primary
-      
-  api-gateway:
-    build:
-      context: ./ApiGateway/ApiGateway
-    container_name: api_gateway
-    ports:
-      - 50051:8080
-    environment:
-      MONGODB_CONNECTION: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/Users"
-    depends_on:
-      - mongo-primary
-      - mongo-secondary1
-      - mongo-secondary2
-      
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
+    
+volumes:
+  kafka_data:
