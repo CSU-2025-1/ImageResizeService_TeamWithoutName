@@ -26,7 +26,7 @@ namespace ApiGateway
                 if (string.IsNullOrEmpty(maxRequestSizeString) || !int.TryParse(maxRequestSizeString, out maxRequestSize))
                 {
                     maxRequestSize = 10485760;
-                    logger.LogWarning("Kafka:MaxRequestSize not configured or invalid. Using default value: {MaxRequestSize}", maxRequestSize);
+                    logger.LogWarning("Kafka:MaxRequSestSize not configured or invalid. Using default value: {MaxRequestSize}", maxRequestSize);
                 }
 
                 var config = new ProducerConfig
@@ -43,8 +43,8 @@ namespace ApiGateway
 
 
             builder.Services.AddScoped<IProducerService, ProducerService>();
-          
-            // Ðåãèñòðàöèÿ MongoDB
+
+            // Регистрация MongoDB
             var mongoClient = new MongoClient(builder.Configuration.GetConnectionString("MongoDB"));
             builder.Services.AddSingleton<IMongoClient>(mongoClient);
             builder.Services.AddScoped<IMongoDatabase>(sp =>
@@ -54,7 +54,6 @@ namespace ApiGateway
             });
 
             // Add services to the container.
-            builder.Services.AddScoped<IImageProcessingService, ImageProcessingService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
 
             var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -81,12 +80,12 @@ namespace ApiGateway
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            // Íàñòðîéêà Swagger ñ ïîääåðæêîé JWT
+            // Настройка Swagger с поддержкой JWT
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "API Gateway", Version = "v1" });
 
-                // Äîáàâëåíèå ïîääåðæêè JWT â Swagger
+                // Добавление поддержки JWT в Swagger
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -119,7 +118,7 @@ namespace ApiGateway
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }*/ //TODO óáðàòü â ôèíàëå
+            }*/ //TODO убрать в финале
 
             app.UseSwagger();
             app.UseSwaggerUI();
