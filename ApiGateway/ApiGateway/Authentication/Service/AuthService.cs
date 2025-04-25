@@ -15,9 +15,9 @@ namespace ApiGateway.Authentication.Service
         private readonly string _jwtAudience;
         private readonly int _jwtExpirationInMinutes;
 
-        public AuthService(IConfiguration config, IMongoDatabase database)
+        public AuthService(IConfiguration config, IMongoCollection<User> userCollection)
         {
-            _users = database.GetCollection<User>("Users");
+            _users = userCollection;
             _jwtSecret = config["Jwt:Secret"];
             _jwtIssuer = config["Jwt:Issuer"];
             _jwtAudience = config["Jwt:Audience"];

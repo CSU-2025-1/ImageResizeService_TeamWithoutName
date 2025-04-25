@@ -17,18 +17,16 @@ services:
     networks:
       - mynetwork
     
-  
   api_gateway:
     build:
       context: ./ApiGateway/ApiGateway
     container_name: api_gateway
     depends_on:
       - kafka
-      - mongo-primary
-      - mongo-secondary1
-      - mongo-secondary2
+      - mongo-init
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
     ports:
       - 50051:8080
     networks:
@@ -42,7 +40,6 @@ services:
       - kafka
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
-      MONGODB_CONNECTION: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/Users"
     ports:
       - 50052:8080
     networks:
@@ -75,39 +72,51 @@ services:
       - mynetwork
 
   mongo-primary:
-    image: mongo:6.0
+    image: mongo:4.4
     container_name: mongo-primary
     restart: always
     ports:
       - "27017:27017"
-    volumes:
-      - ./mongo/primary:/data/db
-      - ./mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     command: mongod --replSet rs0 --bind_ip_all
+    volumes:
+      - mongo-primary_data:/data/db
     networks:
       - mynetwork
 
   mongo-secondary1:
-    image: mongo:6.0
+    image: mongo:4.4
     container_name: mongo-secondary1
     restart: always
-    volumes:
-      - ./mongo/secondary1:/data/db
+    ports:
+      - "27018:27017"
     command: mongod --replSet rs0 --bind_ip_all
-    depends_on:
-      - mongo-primary
+    volumes:
+      - mongo-secondary1_data:/data/db
     networks:
       - mynetwork
 
   mongo-secondary2:
-    image: mongo:6.0
+    image: mongo:4.4
     container_name: mongo-secondary2
     restart: always
-    volumes:
-      - ./mongo/secondary2:/data/db
+    ports:
+      - "27019:27017"
     command: mongod --replSet rs0 --bind_ip_all
+    volumes:
+      - mongo-secondary2_data:/data/db
+    networks:
+      - mynetwork
+
+  mongo-init:
+    image: mongo:4.4
     depends_on:
       - mongo-primary
+      - mongo-secondary1
+      - mongo-secondary2
+    volumes:
+      - ./MongoInit/init.sh:/init.sh
+      - mongo_init_data:/initdb
+    entrypoint: [ "bash", "/init.sh" ]
     networks:
       - mynetwork
 
@@ -117,3 +126,7 @@ networks:
     
 volumes:
   kafka_data:
+  mongo-primary_data:
+  mongo-secondary1_data:
+  mongo-secondary2_data:
+  mongo_init_data:

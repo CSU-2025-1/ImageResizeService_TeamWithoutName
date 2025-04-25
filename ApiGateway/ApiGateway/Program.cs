@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using Microsoft.OpenApi.Models;
+using ApiGateway.Authentication.Model;
 
 namespace ApiGateway
 {
@@ -44,13 +45,26 @@ namespace ApiGateway
 
             builder.Services.AddScoped<IProducerService, ProducerService>();
 
-            // Регистрация MongoDB
-            var mongoClient = new MongoClient(builder.Configuration.GetConnectionString("MongoDB"));
-            builder.Services.AddSingleton<IMongoClient>(mongoClient);
-            builder.Services.AddScoped<IMongoDatabase>(sp =>
+            // Подключение к MongoDB
+            builder.Services.AddSingleton<IMongoClient>(sp =>
             {
-                var client = sp.GetRequiredService<IMongoClient>();
-                return client.GetDatabase("Users");
+                var connectionString = builder.Configuration.GetSection("ConnectionStringsMongoDB").Value;
+                return new MongoClient(connectionString);
+            });
+
+            // Добавление сервиса, для работы с коллекцией TodoItems
+            builder.Services.AddScoped(sp =>
+            {
+                var client = sp.GetService<IMongoClient>();
+                var database = client.GetDatabase("UserDB"); // Имя базы данных
+                return database.GetCollection<User>("Users"); // Имя коллекции
+            });
+
+            // Register IMongoCollection<TodoItem> explicitly
+            builder.Services.AddScoped<IMongoCollection<User>>(sp => {
+                var client = sp.GetService<IMongoClient>();
+                var database = client.GetDatabase("UserDB");
+                return database.GetCollection<User>("Users");
             });
 
             // Add services to the container.
