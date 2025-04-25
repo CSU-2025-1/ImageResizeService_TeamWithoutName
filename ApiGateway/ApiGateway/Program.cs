@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using Microsoft.OpenApi.Models;
+using ApiGateway.Authentication.Model;
 
 namespace ApiGateway
 {
@@ -26,7 +27,7 @@ namespace ApiGateway
                 if (string.IsNullOrEmpty(maxRequestSizeString) || !int.TryParse(maxRequestSizeString, out maxRequestSize))
                 {
                     maxRequestSize = 10485760;
-                    logger.LogWarning("Kafka:MaxRequestSize not configured or invalid. Using default value: {MaxRequestSize}", maxRequestSize);
+                    logger.LogWarning("Kafka:MaxRequSestSize not configured or invalid. Using default value: {MaxRequestSize}", maxRequestSize);
                 }
 
                 var config = new ProducerConfig
@@ -43,18 +44,30 @@ namespace ApiGateway
 
 
             builder.Services.AddScoped<IProducerService, ProducerService>();
-          
-            // Ðåãèñòðàöèÿ MongoDB
-            var mongoClient = new MongoClient(builder.Configuration.GetConnectionString("MongoDB"));
-            builder.Services.AddSingleton<IMongoClient>(mongoClient);
-            builder.Services.AddScoped<IMongoDatabase>(sp =>
+
+            // Подключение к MongoDB
+            builder.Services.AddSingleton<IMongoClient>(sp =>
             {
-                var client = sp.GetRequiredService<IMongoClient>();
-                return client.GetDatabase("Users");
+                var connectionString = builder.Configuration.GetSection("ConnectionStringsMongoDB").Value;
+                return new MongoClient(connectionString);
+            });
+
+            // Добавление сервиса, для работы с коллекцией TodoItems
+            builder.Services.AddScoped(sp =>
+            {
+                var client = sp.GetService<IMongoClient>();
+                var database = client.GetDatabase("UserDB"); // Имя базы данных
+                return database.GetCollection<User>("Users"); // Имя коллекции
+            });
+
+            // Register IMongoCollection<TodoItem> explicitly
+            builder.Services.AddScoped<IMongoCollection<User>>(sp => {
+                var client = sp.GetService<IMongoClient>();
+                var database = client.GetDatabase("UserDB");
+                return database.GetCollection<User>("Users");
             });
 
             // Add services to the container.
-            builder.Services.AddScoped<IImageProcessingService, ImageProcessingService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
 
             var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -81,12 +94,12 @@ namespace ApiGateway
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            // Íàñòðîéêà Swagger ñ ïîääåðæêîé JWT
+            // Настройка Swagger с поддержкой JWT
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "API Gateway", Version = "v1" });
 
-                // Äîáàâëåíèå ïîääåðæêè JWT â Swagger
+                // Добавление поддержки JWT в Swagger
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -119,7 +132,7 @@ namespace ApiGateway
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }*/ //TODO óáðàòü â ôèíàëå
+            }*/ //TODO убрать в финале
 
             app.UseSwagger();
             app.UseSwaggerUI();
