@@ -4,6 +4,7 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Formats.Bmp;
+using ApiGateway.Services.Contract;
 
 namespace ApiGateway.Services
 {
@@ -16,11 +17,14 @@ namespace ApiGateway.Services
             _logger = logger;
         }
 
-        public async Task<byte[]> ConvertFormatAsync(IFormFile imageFile, string format)
+        public async Task<byte[]> ConvertFormatAsync(string imageFile, string format)
         {
             try
             {
-                using var inputStream = imageFile.OpenReadStream();
+                byte[] imageBytes = Convert.FromBase64String(imageFile);
+
+
+                using var inputStream = new MemoryStream(imageBytes);
                 var image = await Image.LoadAsync(inputStream);
 
                 IImageEncoder encoder = format.ToLower() switch
@@ -48,6 +52,14 @@ namespace ApiGateway.Services
                 _logger.LogError(ex, "Error during image format conversion.");
                 throw;
             }
+        }
+
+        public string GetImageFormat(IFormFile imageFile)
+        {
+            using var stream = imageFile.OpenReadStream();
+            var format = Image.DetectFormat(stream);
+
+            return format?.Name.ToLowerInvariant();
         }
     }
 }

@@ -3,7 +3,10 @@ using ApiGateway.Models.ImageMessage;
 using ApiGateway.Services.Contract;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Logging;
 using NUlid;
+using System.IO;
 
 namespace ApiGateway.Controllers
 {
@@ -71,6 +74,9 @@ namespace ApiGateway.Controllers
                 }
 
                 var id = Ulid.NewUlid().ToString();
+                var format = request.Format == null ? _formatService.GetImageFormat(request.Image) : request.Format;
+
+                _logger.LogInformation($"Формат {format}");
 
                 var imageMessage = new ImageMessage
                 {
@@ -81,7 +87,7 @@ namespace ApiGateway.Controllers
                     Width = request.Width ?? -1,
                     PreserveAspectRatio = request.PreserveAspectRatio,
                     Angle = request.Angle ?? 361,
-                    Format = request.Format
+                    Format = format
                 };
                 imageMessage.SetStep();
 
@@ -102,64 +108,32 @@ namespace ApiGateway.Controllers
             }
         }
 
-        [HttpGet("random-image")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
+
+        [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetRandomImage()
-        {
-            try
-            {
-                string imagesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Images");
-
-                var imageFiles = Directory.GetFiles(imagesDirectory);
-
-                if (!imageFiles.Any())
-                {
-                    return NotFound("No images found in the directory.");
-                }
-
-                Random random = new Random();
-                string randomImagePath = imageFiles[random.Next(imageFiles.Length)];
-
-                string[] supportedFormats = { "png", "jpeg", "webp", "bmp" };
-                string randomFormat = supportedFormats[random.Next(supportedFormats.Length)];
-
-                using (var fileStream = new FileStream(randomImagePath, FileMode.Open))
-                {
-                    IFormFile formFile = new FormFile(fileStream, 0, fileStream.Length, "image", Path.GetFileName(randomImagePath));
-
-                    byte[] formattedImageBytes = await _formatService.ConvertFormatAsync(formFile, randomFormat);
-
-                    return File(formattedImageBytes, $"image/{randomFormat}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing random image request.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error processing the image.");
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetImage([FromForm] GetImageRequest request)
+        public async Task<IActionResult> GetImage([FromRoute] string id)
         {
             if (!ModelState.IsValid)
             {
-                foreach (var error in ModelState)
-                {
-                    foreach (var modelError in error.Value.Errors)
-                    {
-                        _logger.LogWarning($"Validation error for {error.Key}: {modelError.ErrorMessage}");
-                    }
-                }
+                _logger.LogWarning($"Validation error");
                 return BadRequest(ModelState);
             }
 
             try
             {
-                var imageDatabase = await _imageDatabaseService.GetImage(request.Id);
+                var imageDatabase = await _imageDatabaseService.GetImage(id);
 
+                if (imageDatabase == null)
+                {
+                    _logger.LogInformation($"Image was not get by id {id} or processing image was not complete.");
+                    return NotFound($"Image was not get by id {id} or processing image was not complete.");
+                }
 
+                byte[] formattedImageBytes = await _formatService.ConvertFormatAsync(imageDatabase.Image, imageDatabase.Format);
+                return File(formattedImageBytes, $"image/{imageDatabase.Format}");
             }
             catch (Exception ex) 
             {
