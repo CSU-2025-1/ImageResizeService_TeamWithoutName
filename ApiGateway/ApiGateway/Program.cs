@@ -1,3 +1,4 @@
+using ApiGateway.Models;
 using ApiGateway.Models.Authentication;
 using ApiGateway.Models.ImageMessage;
 using ApiGateway.Services;
@@ -70,7 +71,23 @@ namespace ApiGateway
                 return database.GetCollection<User>("Users");
             });
 
+            builder.Services.AddScoped(sp =>
+            {
+                var client = sp.GetService<IMongoClient>();
+                var database = client.GetDatabase("ImageDB");
+                return database.GetCollection<ImageDatabase>("Images");
+            });
+
+            builder.Services.AddScoped<IMongoCollection<ImageDatabase>>(sp => {
+                var client = sp.GetService<IMongoClient>();
+                var database = client.GetDatabase("ImageDB");
+                return database.GetCollection<ImageDatabase>("Images");
+            });
+
+
             builder.Services.AddScoped<IAuthService, MongoAuthService>();
+
+            builder.Services.AddScoped<IImageDatabaseService, ImageMongoDatabaseService>();
 
             var jwtSettings = builder.Configuration.GetSection("Jwt");
             var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);

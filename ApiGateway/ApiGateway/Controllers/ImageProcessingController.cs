@@ -18,16 +18,18 @@ namespace ApiGateway.Controllers
     {
         private readonly ILogger<ImageProcessingController> _logger;
         private readonly ISendingService _producerService;
+        private readonly IImageDatabaseService _imageDatabaseService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImageProcessingController"/> class.
         /// </summary>
         /// <param name="logger">>A logger for recording information about the controller.</param>
         /// <param name="producerService">A service that transmits a message to kafka.</param>
-        public ImageProcessingController(ILogger<ImageProcessingController> logger, ISendingService producerService)
+        public ImageProcessingController(ILogger<ImageProcessingController> logger, ISendingService producerService, IImageDatabaseService imageDatabaseService)
         {
             _logger = logger;
             _producerService = producerService;
+            _imageDatabaseService = imageDatabaseService;
         }
 
         /// <summary>
@@ -95,6 +97,34 @@ namespace ApiGateway.Controllers
             {
                 _logger.LogError(ex, "Error apigateway image in controller.");
                 return StatusCode(StatusCodes.Status500InternalServerError, "Error processing the image.");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetImage([FromForm] GetImageRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                foreach (var error in ModelState)
+                {
+                    foreach (var modelError in error.Value.Errors)
+                    {
+                        _logger.LogWarning($"Validation error for {error.Key}: {modelError.ErrorMessage}");
+                    }
+                }
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var imageDatabase = await _imageDatabaseService.GetImage(request.Id);
+
+
+            }
+            catch (Exception ex) 
+            {
+                _logger.LogError(ex, "Error get image in controller.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error get image.");
             }
         }
     }
