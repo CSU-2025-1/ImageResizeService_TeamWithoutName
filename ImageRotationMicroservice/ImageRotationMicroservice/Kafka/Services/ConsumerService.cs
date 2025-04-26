@@ -58,7 +58,7 @@ namespace ImageRotationMicroservice.Kafka.Services
                                 Width = imageMessage.Width,
                                 Height = imageMessage.Height,
                                 PreserveAspectRatio = imageMessage.PreserveAspectRatio,
-                                Angle = 361,
+                                Angle = imageMessage.Angle,
                                 Format = imageMessage.Format,
                                 IsNeedResize = imageMessage.IsNeedResize,
                                 IsNeedRotation = false

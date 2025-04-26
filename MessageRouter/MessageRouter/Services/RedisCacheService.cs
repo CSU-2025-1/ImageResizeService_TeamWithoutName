@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace MessageRouter.Services
 {
-    public class RedisCacheServices : ICacheService
+    public class RedisCacheService : ICacheService
     {
         private readonly IDatabase _db;
-        private readonly ILogger<RedisCacheServices> _logger;
+        private readonly ILogger<RedisCacheService> _logger;
 
-        public RedisCacheServices(IConnectionMultiplexer redis, ILogger<RedisCacheServices> logger)
+        public RedisCacheService(IConnectionMultiplexer redis, ILogger<RedisCacheService> logger)
         {
             _db = redis.GetDatabase();
             _logger = logger;

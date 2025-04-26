@@ -87,7 +87,7 @@ namespace MessageRouter
             builder.Services.AddHostedService<ConsumerService>();
             builder.Services.AddSingleton<IImageProcessingService, ImageProcessingService>();
             builder.Services.AddSingleton<IProducerService, ProducerService>();
-            builder.Services.AddScoped<ICacheService, RedisCacheServices>();
+            builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
 
             var host = builder.Build();

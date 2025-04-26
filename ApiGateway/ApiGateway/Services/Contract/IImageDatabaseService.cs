@@ -4,6 +4,7 @@ namespace ApiGateway.Services.Contract
 {
     public interface IImageDatabaseService
     {
-        Task<ImageDatabase> GetImage(string id);
+        Task<ImageDatabase> GetImageById(string id);
+        Task<ImageDatabase> GetImageByParams(ImageChecker imageChecker);
     }
 }

@@ -22,11 +22,13 @@ services:
       context: ./ApiGateway/ApiGateway
     container_name: api_gateway
     depends_on:
+      - redis
       - kafka
       - mongo-init
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
+      RedisConnectionString: "redis:6379"
     ports:
       - 50051:8080
     networks:

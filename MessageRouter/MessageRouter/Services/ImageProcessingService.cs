@@ -42,6 +42,7 @@ namespace MessageRouter.Services
                 bool isSavedCache = _cacheService.SaveImage(new ImageCache
                 {
                     Key = $"{imageMessage.OriginalImage}_{imageMessage.Width}_{imageMessage.Height}_{imageMessage.PreserveAspectRatio}_{imageMessage.Angle}_{imageMessage.Format}",
+
                     Image = imageMessage.Image
                 });
 

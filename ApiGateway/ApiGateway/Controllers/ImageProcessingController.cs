@@ -23,18 +23,26 @@ namespace ApiGateway.Controllers
         private readonly ISendingService _producerService;
         private readonly IImageDatabaseService _imageDatabaseService;
         private readonly IFormatService _formatService;
+        private readonly ISavingService _savingService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImageProcessingController"/> class.
         /// </summary>
         /// <param name="logger">>A logger for recording information about the controller.</param>
         /// <param name="producerService">A service that transmits a message to kafka.</param>
-        public ImageProcessingController(ILogger<ImageProcessingController> logger, ISendingService producerService, IFormatService formatService, IImageDatabaseService imageDatabaseService)
+        public ImageProcessingController(
+            ILogger<ImageProcessingController> logger, 
+            ISendingService producerService, 
+            IFormatService formatService, 
+            IImageDatabaseService imageDatabaseService,
+            ISavingService savingService
+        )
         {
             _logger = logger;
             _producerService = producerService;
             _formatService = formatService;
             _imageDatabaseService = imageDatabaseService;
+            _savingService = savingService;
         }
 
         /// <summary>
@@ -76,7 +84,20 @@ namespace ApiGateway.Controllers
                 var id = Ulid.NewUlid().ToString();
                 var format = request.Format == null ? _formatService.GetImageFormat(request.Image) : request.Format;
 
-                _logger.LogInformation($"Формат {format}");
+                var imageCheck = await _savingService.Check(new ImageChecker {
+                    Image = convertedImage.Result,
+                    Height = request.Height ?? -1,
+                    Width = request.Width ?? -1,
+                    PreserveAspectRatio = request.PreserveAspectRatio,
+                    Angle = request.Angle ?? 361,
+                    Format = format
+                });
+
+                if (imageCheck != null)
+                {
+                    byte[] formattedImageBytes = await _formatService.ConvertFormatAsync(imageCheck, format);
+                    return File(formattedImageBytes, $"image/{format}");
+                }
 
                 var imageMessage = new ImageMessage
                 {
@@ -124,7 +145,7 @@ namespace ApiGateway.Controllers
 
             try
             {
-                var imageDatabase = await _imageDatabaseService.GetImage(id);
+                var imageDatabase = await _imageDatabaseService.GetImageById(id);
 
                 if (imageDatabase == null)
                 {

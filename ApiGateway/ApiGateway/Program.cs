@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MongoDB.Driver;
+using StackExchange.Redis;
 using System.Text;
 
 namespace ApiGateway
@@ -84,10 +85,19 @@ namespace ApiGateway
                 return database.GetCollection<ImageDatabase>("Images");
             });
 
+            builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+            {
+                var redisConnectionString = builder.Configuration["RedisConnectionString"];
+                return ConnectionMultiplexer.Connect(redisConnectionString);
+            });
 
             builder.Services.AddScoped<IAuthService, MongoAuthService>();
 
+            builder.Services.AddScoped<ISavingService, RedisAndMongoSavingService>();
+
             builder.Services.AddScoped<IImageDatabaseService, ImageMongoDatabaseService>();
+
+            builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
             var jwtSettings = builder.Configuration.GetSection("Jwt");
             var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
