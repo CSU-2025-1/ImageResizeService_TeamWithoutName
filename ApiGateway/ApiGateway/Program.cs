@@ -111,6 +111,8 @@ namespace ApiGateway
                 };
             });
 
+            builder.Services.AddScoped<IFormatService, FormatService>();
+
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
 
