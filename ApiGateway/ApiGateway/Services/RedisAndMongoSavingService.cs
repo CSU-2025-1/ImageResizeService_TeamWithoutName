@@ -16,7 +16,7 @@ namespace ApiGateway.Services
             _cacheService = cacheService;
         }
 
-        public async Task<string> Check(ImageChecker imageChecker)
+        public async Task<string> CheckFull(ImageChecker imageChecker)
         {
             try
             {
@@ -34,6 +34,35 @@ namespace ApiGateway.Services
             {
                 _logger.LogError(ex, "Error checking Mongo or Redis");
                 return null;
+            }
+        }
+
+        public async Task<(string, string)> CheckId(string id)
+        {
+            try
+            {
+                var imageCache = _cacheService.GetImage(id);
+                if (imageCache != null)
+                {
+                    string[] parts = imageCache.Split('_');
+                    string image = parts[0]; 
+                    string format = parts[1]; 
+                    return (image, format);
+                }
+
+                var imageDB = await _imageDatabaseService.GetImageById(id);
+
+                _cacheService.SaveImage(new ImageCache {
+                    Key = id,
+                    Image = imageDB.Image
+                });
+
+                return (imageDB.Image, imageDB.Format);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking Mongo or Redis");
+                return (null, null);
             }
         }
     }

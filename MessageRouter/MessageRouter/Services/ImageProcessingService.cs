@@ -39,11 +39,18 @@ namespace MessageRouter.Services
                     return isSent;
                 }
 
-                bool isSavedCache = _cacheService.SaveImage(new ImageCache
+                bool isSavedCacheFull = _cacheService.SaveImage(new ImageCache
                 {
                     Key = $"{imageMessage.OriginalImage}_{imageMessage.Width}_{imageMessage.Height}_{imageMessage.PreserveAspectRatio}_{imageMessage.Angle}_{imageMessage.Format}",
 
                     Image = imageMessage.Image
+                });
+
+                bool isSavedCacheId = _cacheService.SaveImage(new ImageCache
+                {
+                    Key = $"{imageMessage.Id}",
+
+                    Image = $"{imageMessage.Image}_{imageMessage.Format}"
                 });
 
                 bool isSaved = await _imageDatabaseService.SaveImage(new ImageDatabase

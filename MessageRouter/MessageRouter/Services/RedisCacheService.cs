@@ -33,7 +33,7 @@ namespace MessageRouter.Services
             {
                 _logger.LogError(ex, $"Error saving image with key {imageCache.Key} to Redis");
                 return false;
-            }
+            }   
         }
     }
 }

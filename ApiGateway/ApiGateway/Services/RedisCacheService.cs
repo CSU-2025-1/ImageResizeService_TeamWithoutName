@@ -36,5 +36,20 @@ namespace ApiGateway.Services
                 return null;
             }
         }
+
+        public bool SaveImage(ImageCache imageCache)
+        {
+            try
+            {
+                var isSave = _db.StringSet(imageCache.Key, imageCache.Image, TimeSpan.FromMinutes(30));
+                _logger.LogInformation($"The image was successfully saved in Redis with a key {imageCache.Key}");
+                return isSave;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error saving image with key {imageCache.Key} to Redis");
+                return false;
+            }
+        }
     }
 }

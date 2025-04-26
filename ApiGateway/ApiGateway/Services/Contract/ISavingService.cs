@@ -4,7 +4,7 @@ namespace ApiGateway.Services.Contract
 {
     public interface ISavingService
     {
-        Task<string> Check(ImageChecker imageChecker);
-
+        Task<string> CheckFull(ImageChecker imageChecker);
+        Task<(string, string)> CheckId(string id);
     }
 }

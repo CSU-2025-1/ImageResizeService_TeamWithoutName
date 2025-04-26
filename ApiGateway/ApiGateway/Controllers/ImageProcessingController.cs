@@ -84,7 +84,7 @@ namespace ApiGateway.Controllers
                 var id = Ulid.NewUlid().ToString();
                 var format = request.Format == null ? _formatService.GetImageFormat(request.Image) : request.Format;
 
-                var imageCheck = await _savingService.Check(new ImageChecker {
+                var imageCheck = await _savingService.CheckFull(new ImageChecker {
                     Image = convertedImage.Result,
                     Height = request.Height ?? -1,
                     Width = request.Width ?? -1,
@@ -145,16 +145,16 @@ namespace ApiGateway.Controllers
 
             try
             {
-                var imageDatabase = await _imageDatabaseService.GetImageById(id);
+                var (image, format) = await _savingService.CheckId(id);
 
-                if (imageDatabase == null)
+                if (image == null)
                 {
                     _logger.LogInformation($"Image was not get by id {id} or processing image was not complete.");
                     return NotFound($"Image was not get by id {id} or processing image was not complete.");
                 }
 
-                byte[] formattedImageBytes = await _formatService.ConvertFormatAsync(imageDatabase.Image, imageDatabase.Format);
-                return File(formattedImageBytes, $"image/{imageDatabase.Format}");
+                byte[] formattedImageBytes = await _formatService.ConvertFormatAsync(image, format);
+                return File(formattedImageBytes, $"image/{format}");
             }
             catch (Exception ex) 
             {
