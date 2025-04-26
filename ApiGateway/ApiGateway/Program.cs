@@ -1,18 +1,26 @@
-using ApiGateway.Authentication.Service;
-using ApiGateway.Models.Kafka;
+using ApiGateway.Models.Authentication;
+using ApiGateway.Models.ImageMessage;
+using ApiGateway.Services;
+using ApiGateway.Services.Contract;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using ApiGateway.Services;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Driver;
 using Microsoft.OpenApi.Models;
-using ApiGateway.Authentication.Model;
+using MongoDB.Driver;
+using System.Text;
 
 namespace ApiGateway
 {
+    /// <summary>
+    /// The main class that contains the entry point and the application configuration.
+    /// </summary>
     public class Program
     {
+        /// <summary>
+        /// The main application method that performs Web API configuration, service registration, middleware configuration, and application launch.
+        /// </summary>
+        /// <param name="args">Command-line arguments passed to the application.</param>
+        /// <exception cref="InvalidOperationException">Thrown when required configuration settings, such as Kafka BootstrapServers, are missing from the application's configuration.</exception>
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -41,34 +49,28 @@ namespace ApiGateway
 
                 return producerBuilder.Build();
             });
+            builder.Services.AddScoped<ISendingService, KafkaSendingService>();
 
-
-            builder.Services.AddScoped<IProducerService, ProducerService>();
-
-            // Подключение к MongoDB
             builder.Services.AddSingleton<IMongoClient>(sp =>
             {
                 var connectionString = builder.Configuration.GetSection("ConnectionStringsMongoDB").Value;
                 return new MongoClient(connectionString);
             });
 
-            // Добавление сервиса, для работы с коллекцией TodoItems
             builder.Services.AddScoped(sp =>
             {
                 var client = sp.GetService<IMongoClient>();
-                var database = client.GetDatabase("UserDB"); // Имя базы данных
-                return database.GetCollection<User>("Users"); // Имя коллекции
+                var database = client.GetDatabase("UserDB");
+                return database.GetCollection<User>("Users");
             });
 
-            // Register IMongoCollection<TodoItem> explicitly
             builder.Services.AddScoped<IMongoCollection<User>>(sp => {
                 var client = sp.GetService<IMongoClient>();
                 var database = client.GetDatabase("UserDB");
                 return database.GetCollection<User>("Users");
             });
 
-            // Add services to the container.
-            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IAuthService, MongoAuthService>();
 
             var jwtSettings = builder.Configuration.GetSection("Jwt");
             var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
@@ -94,7 +96,7 @@ namespace ApiGateway
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            // Настройка Swagger с поддержкой JWT
+
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "API Gateway", Version = "v1" });

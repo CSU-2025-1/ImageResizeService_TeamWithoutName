@@ -1,21 +1,29 @@
-﻿using Confluent.Kafka;
-using System.Collections.Concurrent;
-using ApiGateway.Models.Kafka;
-using System.Runtime.CompilerServices;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
+﻿using ApiGateway.Models.ImageMessage;
+using ApiGateway.Services.Contract;
+using Confluent.Kafka;
 
 namespace ApiGateway.Services
 {
-    public class ProducerService : IProducerService
+    /// <summary>
+    /// A service for sending messages to Kafka.
+    /// </summary>
+    public class KafkaSendingService : ISendingService
     {
-        private readonly ILogger<ProducerService> _logger;
+        private readonly ILogger<KafkaSendingService> _logger;
         private readonly IProducer<Null, ImageMessage> _producer;
         private readonly string _topicKey = "KafkaTopics:SendRequest";
         private readonly string _topic;
 
-        public ProducerService(
+        /// <summary>
+        /// Initializes a new instance of the <see cref="KafkaSendingService"/> class.
+        /// </summary>
+        /// <param name="config">Application configuration containing Topic settings.</param>
+        /// <param name="logger">A logger for recording information about the service.</param>
+        /// <param name="producer">Kafka producer.</param>
+        /// <exception cref="InvalidOperationException">Thrown when required configuration settings, such as Kafka Topic, are missing from the application's configuration.</exception>
+        public KafkaSendingService(
             IConfiguration config,
-            ILogger<ProducerService> logger, 
+            ILogger<KafkaSendingService> logger, 
             IProducer<Null, ImageMessage> producer
             )
         {
@@ -24,6 +32,7 @@ namespace ApiGateway.Services
             _topic = config[_topicKey] ?? throw new InvalidOperationException($"{_topicKey} not configured in appsettings.");
         }
 
+        /// <inheritdoc cref="ISendingService.SendImageAsync(ImageMessage)"/>
         public async Task<bool> SendImageAsync(ImageMessage imageMessage)
         {
             try

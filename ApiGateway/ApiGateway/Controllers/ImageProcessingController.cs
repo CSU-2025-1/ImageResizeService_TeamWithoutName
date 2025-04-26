@@ -1,26 +1,46 @@
-﻿using ApiGateway.Models.Kafka;
-using ApiGateway.Models;
-using ApiGateway.Services;
+﻿using ApiGateway.Models;
+using ApiGateway.Models.ImageMessage;
+using ApiGateway.Services.Contract;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NUlid;
 
 namespace ApiGateway.Controllers
 {
+
+    /// <summary>
+    /// A controller that contains methods for image processing.
+    /// </summary>
     [ApiController]
     [Route("api/images")]
     [Authorize]
     public class ImageProcessingController : ControllerBase
     {
         private readonly ILogger<ImageProcessingController> _logger;
-        private readonly IProducerService _imageService;
+        private readonly ISendingService _producerService;
 
-        public ImageProcessingController(ILogger<ImageProcessingController> logger, IProducerService imageService)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImageProcessingController"/> class.
+        /// </summary>
+        /// <param name="logger">>A logger for recording information about the controller.</param>
+        /// <param name="producerService">A service that transmits a message to kafka.</param>
+        public ImageProcessingController(ILogger<ImageProcessingController> logger, ISendingService producerService)
         {
             _logger = logger;
-            _imageService = imageService;
+            _producerService = producerService;
         }
 
+        /// <summary>
+        /// Accepts the image, the conversion parameters, and sends an image processing request.
+        /// </summary>
+        /// <param name="request">The <see cref="ImageProcessingRequest"/> object containing the image and image modification parameters.</param>
+        /// <returns>
+        /// An <see cref="IActionResult"/> representing the result of the registration attempt.<br/>
+        /// Returns:<br/>
+        ///   - <see cref="StatusCodes.Status200OK"/> (200 OK) Successful sending of an image processing request. Returns the request ID (Ulid).<br/>
+        ///   - <see cref="StatusCodes.Status400BadRequest"/> (400 BadRequest) Validation error.<br/>
+        ///   - <see cref="StatusCodes.Status500InternalServerError"/> (500 Internal Server Error) The error is on the server side. There may be problems with image conversion, message sending, or other internal errors.<br/>
+        /// </returns>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -61,9 +81,9 @@ namespace ApiGateway.Controllers
                 };
                 imageMessage.SetStep();
 
-                bool processingImageBytes = await _imageService.SendImageAsync(imageMessage);
+                bool isSend = await _producerService.SendImageAsync(imageMessage);
 
-                if (processingImageBytes)
+                if (isSend)
                 {
                     return Ok(id);
                 } else
@@ -71,19 +91,11 @@ namespace ApiGateway.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError, "Error send the image.");
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Error apigateway image in controller.");
-                throw e;
+                _logger.LogError(ex, "Error apigateway image in controller.");
                 return StatusCode(StatusCodes.Status500InternalServerError, "Error processing the image.");
             }
         }
-
-        /*[HttpGet("GetImage")] // Добавлен атрибут маршрута
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
-        public IActionResult GetImage()
-        {
-            //TODO вытягивание из бд
-        }*/
     }
 }

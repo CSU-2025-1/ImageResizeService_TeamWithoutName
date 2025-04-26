@@ -2,7 +2,7 @@
 
 namespace ApiGateway.Models
 {
-    public class StringToIFormFileConverter
+    public class StringToIFormFileConverter // TODO Будет ли нужен по итогу?
     {
         public static IFormFile ConvertBase64ToIFormFile(string base64String, string fileName, string contentType)
         {
