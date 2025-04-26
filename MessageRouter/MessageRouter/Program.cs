@@ -3,6 +3,7 @@ using MessageRouter.Model;
 using MessageRouter.Services;
 using MessageRouter.Services.Contracts;
 using MongoDB.Driver;
+using StackExchange.Redis;
 
 namespace MessageRouter
 {
@@ -77,10 +78,17 @@ namespace MessageRouter
                 return database.GetCollection<ImageDatabase>("Images");
             });
 
+            builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+            {
+                var redisConnectionString = builder.Configuration["RedisConnectionString"];
+                return ConnectionMultiplexer.Connect(redisConnectionString);
+            });
             builder.Services.AddScoped<IImageDatabaseService, ImageMongoDatabaseService>();
             builder.Services.AddHostedService<ConsumerService>();
             builder.Services.AddSingleton<IImageProcessingService, ImageProcessingService>();
             builder.Services.AddSingleton<IProducerService, ProducerService>();
+            builder.Services.AddScoped<ICacheService, RedisCacheServices>();
+
 
             var host = builder.Build();
             host.Run();

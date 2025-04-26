@@ -63,11 +63,13 @@ services:
       context: ./MessageRouter/MessageRouter
     container_name: message_router
     depends_on:
+      - redis
       - kafka
       - mongo-init
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
+      RedisConnectionString: "redis:6379"
     ports:
       - 50054:8080
     networks:
@@ -119,6 +121,14 @@ services:
       - ./MongoInit/init.sh:/init.sh
       - mongo_init_data:/initdb
     entrypoint: [ "bash", "/init.sh" ]
+    networks:
+      - mynetwork
+
+  redis:
+    image: "redis:alpine"
+    container_name: redis
+    ports:
+      - "6379:6379"
     networks:
       - mynetwork
 
