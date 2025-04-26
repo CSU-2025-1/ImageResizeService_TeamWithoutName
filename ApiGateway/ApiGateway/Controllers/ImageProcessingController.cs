@@ -46,9 +46,12 @@ namespace ApiGateway.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError, "Error with image.");
                 }
 
+                var id = Ulid.NewUlid().ToString();
+
                 var imageMessage = new ImageMessage
                 {
-                    Id = Ulid.NewUlid().ToString(),
+                    Id = id,
+                    OriginalImage = convertedImage.Result,
                     Image = convertedImage.Result,
                     Height = request.Height ?? -1,
                     Width = request.Width ?? -1,
@@ -62,7 +65,7 @@ namespace ApiGateway.Controllers
 
                 if (processingImageBytes)
                 {
-                    return Ok();
+                    return Ok(id);
                 } else
                 {
                     return StatusCode(StatusCodes.Status500InternalServerError, "Error send the image.");

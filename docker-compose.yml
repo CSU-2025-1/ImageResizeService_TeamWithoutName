@@ -64,8 +64,10 @@ services:
     container_name: message_router
     depends_on:
       - kafka
+      - mongo-init
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
     ports:
       - 50054:8080
     networks:

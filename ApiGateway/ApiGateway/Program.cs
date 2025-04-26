@@ -1,7 +1,7 @@
+using ApiGateway.Authentication.Service;
 using ApiGateway.Models.Kafka;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using ApiGateway.Authentication.Service;
 using ApiGateway.Services;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;

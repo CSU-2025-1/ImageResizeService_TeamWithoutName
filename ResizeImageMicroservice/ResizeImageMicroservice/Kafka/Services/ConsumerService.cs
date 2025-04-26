@@ -1,5 +1,4 @@
-﻿
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using ResizeImageMicroservice.Kafka.Models;
 using ResizeImageMicroservice.Services;
 
@@ -55,6 +54,7 @@ namespace ResizeImageMicroservice.Kafka.Services
                         bool answerFromProducer = await _producerService.SendToImageResized(
                             new ImageMessage {
                                 Id = imageMessage.Id,
+                                OriginalImage = imageMessage.OriginalImage,
                                 Image = Convert.ToBase64String(resizedImageBytes),
                                 Width = -1,
                                 Height = -1,

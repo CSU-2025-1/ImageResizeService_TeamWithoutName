@@ -1,9 +1,10 @@
-﻿
-namespace MessageRouter.Model
+﻿namespace MessageRouter.Model
 {
     public class ImageMessage
     {
         public string Id { get; set; }
+
+        public string OriginalImage { get; set; }
 
         public string Image { get; set; }
 

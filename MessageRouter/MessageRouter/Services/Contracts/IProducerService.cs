@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MessageRouter.Services
+namespace MessageRouter.Services.Contracts
 {
     public interface IProducerService
     {

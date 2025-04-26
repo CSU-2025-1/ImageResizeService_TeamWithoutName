@@ -1,6 +1,8 @@
 using Confluent.Kafka;
 using MessageRouter.Model;
 using MessageRouter.Services;
+using MessageRouter.Services.Contracts;
+using MongoDB.Driver;
 
 namespace MessageRouter
 {
@@ -56,6 +58,26 @@ namespace MessageRouter
                 return consumerBuilder.Build();
             });
 
+            builder.Services.AddSingleton<IMongoClient>(sp =>
+            {
+                var connectionString = builder.Configuration.GetSection("ConnectionStringsMongoDB").Value;
+                return new MongoClient(connectionString);
+            });
+
+            builder.Services.AddScoped(sp =>
+            {
+                var client = sp.GetService<IMongoClient>();
+                var database = client.GetDatabase("ImageDB");
+                return database.GetCollection<ImageDatabase>("Images");
+            });
+
+            builder.Services.AddScoped<IMongoCollection<ImageDatabase>>(sp => {
+                var client = sp.GetService<IMongoClient>();
+                var database = client.GetDatabase("ImageDB");
+                return database.GetCollection<ImageDatabase>("Images");
+            });
+
+            builder.Services.AddScoped<IImageDatabaseService, ImageMongoDatabaseService>();
             builder.Services.AddHostedService<ConsumerService>();
             builder.Services.AddSingleton<IImageProcessingService, ImageProcessingService>();
             builder.Services.AddSingleton<IProducerService, ProducerService>();

@@ -1,5 +1,5 @@
 ﻿using MessageRouter.Model;
-using System.Collections.Concurrent;
+using MessageRouter.Services.Contracts;
 
 namespace MessageRouter.Services
 {
@@ -7,13 +7,17 @@ namespace MessageRouter.Services
     {
         private readonly ILogger<ImageProcessingService> _logger;
         private readonly IProducerService _producerService;
-        private readonly ConcurrentQueue<ImageMessage> _resultsQueue;
+        private readonly IImageDatabaseService _imageDatabaseService;
 
-        public ImageProcessingService(ILogger<ImageProcessingService> logger, IProducerService producerService)
+        public ImageProcessingService(
+            ILogger<ImageProcessingService> logger, 
+            IProducerService producerService, 
+            IImageDatabaseService imageDatabaseService
+            )
         {
             _logger = logger;
             _producerService = producerService;
-            _resultsQueue = new ConcurrentQueue<ImageMessage>();
+            _imageDatabaseService = imageDatabaseService;
         }
 
         public async Task<bool> ProcessingImageAsync(ImageMessage imageMessage)
@@ -32,14 +36,24 @@ namespace MessageRouter.Services
                     return isSent;
                 }
 
-                _logger.LogInformation($"Image {imageMessage.Id} done");
+                bool isSaved = await _imageDatabaseService.SaveImage(new ImageDatabase
+                {
+                    Id = imageMessage.Id,
+                    OriginalImage = imageMessage.OriginalImage,
+                    Image = imageMessage.Image,
+                    Width = imageMessage.Width,
+                    Height = imageMessage.Height,
+                    PreserveAspectRatio = imageMessage.PreserveAspectRatio,
+                    Angle = imageMessage.Angle,
+                    Format = imageMessage.Format,
+                });
 
-                return false;
+                return isSaved;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Error image in ImageProcessingService.");
-                throw;
+                _logger.LogError(ex, "Error image in ImageProcessingService.");
+                return false;
             }
         }
     }

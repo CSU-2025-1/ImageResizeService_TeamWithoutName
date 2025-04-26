@@ -4,6 +4,8 @@
     {
         public string Id { get; set; }
 
+        public string OriginalImage { get; set; }
+
         public string Image { get; set; }
 
         public int Width { get; set; }

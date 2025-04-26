@@ -53,6 +53,7 @@ namespace ImageRotationMicroservice.Kafka.Services
                             new ImageMessage
                             {
                                 Id = imageMessage.Id,
+                                OriginalImage = imageMessage.OriginalImage,
                                 Image = Convert.ToBase64String(resizedImageBytes),
                                 Width = imageMessage.Width,
                                 Height = imageMessage.Height,
