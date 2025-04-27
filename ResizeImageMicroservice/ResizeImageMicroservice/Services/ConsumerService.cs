@@ -1,9 +1,13 @@
 ﻿using Confluent.Kafka;
-using ResizeImageMicroservice.Kafka.Models;
-using ResizeImageMicroservice.Services;
+using ResizeImageMicroservice.Models.ImageMessage;
+using ResizeImageMicroservice.Services.Contract;
 
-namespace ResizeImageMicroservice.Kafka.Services
+namespace ResizeImageMicroservice.Services
 {
+    /// <summary>
+    /// The `ConsumerService' is a background service that consumes messages from a Kafka topic,
+    /// performs image resizing, and sends the resized image to another Kafka topic.
+    /// </summary>
     public class ConsumerService : BackgroundService
     {
         private readonly ILogger<ConsumerService> _logger;
@@ -11,9 +15,18 @@ namespace ResizeImageMicroservice.Kafka.Services
         private readonly string _topicKey = "KafkaTopics:ResizerImage";
         private readonly string _topic;
         private readonly IProducerService _producerService;
-
         private readonly IImageResizeService _imageResizeService;
 
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConsumerService"/> class.
+        /// </summary>
+        /// <param name="config">The <see cref="IConfiguration"/> interface for accessing the application configuration.</param>
+        /// <param name="logger">The interface <see cref="ILogger{ConsumerService}"/> for logging.</param>
+        /// <param name="consumerRouterImage">Interface <see cref="IConsumer{Null, ImageMessage}"/> for receiving messages from a Kafka topic.</param>
+        /// <param name="imageResizeService">The <see cref="IImageResizeService"/> interface for image resizing.</param>
+        /// <param name="producerService">The <see cref="IProducerService"/> interface for producer Kafka.</param>
+        /// <exception cref="InvalidOperationException">It is discarded if the <c>KafkaTopics key is not configured in the application configuration.:RouterImage</c>.</exception>
         public ConsumerService(
             IConfiguration config, 
             ILogger<ConsumerService> logger, 
@@ -29,6 +42,12 @@ namespace ResizeImageMicroservice.Kafka.Services
             _topic = config[_topicKey] ?? throw new InvalidOperationException($"{_topicKey} not configured in appsettings.");
         }
 
+        /// <summary>
+        /// The main method of running a background service. This method subscribes to a Kafka topic,
+        /// consumes messages, resizes the image, and sends the modified image to another topic.
+        /// </summary>
+        /// <param name="stoppingToken">The `CancellationToken' that signals the need to stop the service.</param>
+        /// <returns>A task representing an asynchronous operation.</returns>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _consumer.Subscribe(_topic);
@@ -87,31 +106,31 @@ namespace ResizeImageMicroservice.Kafka.Services
             }
             catch (OperationCanceledException)
             {
-                // Ensure the consumer leaves the group cleanly and final offsets are committed.
                 _consumer.Close();
             }
         }
 
+        /// <summary>
+        /// Converts a Base64 string to an 'IFormFile` object.
+        /// </summary>
+        /// <param name="base64String">The Base64 string representing the image.</param>
+        /// <returns>The <see cref="IFormFile"/> object representing the image.</returns>
         private IFormFile ConvertBase64ToIFormFile(string base64String)
         {
-            // Remove the header if it exists (e.g., "data:image/png;base64,")
             var base64Data = base64String.Substring(base64String.IndexOf(',') + 1);
-
             byte[] imageBytes = Convert.FromBase64String(base64Data);
-
-            // Create a MemoryStream from the byte array
             var memoryStream = new MemoryStream(imageBytes);
 
-            // Create a FormFile from the MemoryStream
             IFormFile formFile = new FormFile(memoryStream, 0, memoryStream.Length, "image", "image.jpg")
             {
                 Headers = new HeaderDictionary(),
-                ContentType = "image/jpeg" // Замените на фактический тип контента, если знаете его.
+                ContentType = "image/jpeg"
             };
 
             return formFile;
         }
 
+        /// <inheritdoc cref="BackgroundService.Dispose"/>
         public override void Dispose()
         {
             _consumer.Dispose();
