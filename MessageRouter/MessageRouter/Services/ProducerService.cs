@@ -4,12 +4,21 @@ using MessageRouter.Services.Contracts;
 
 namespace MessageRouter.Services
 {
+    /// <summary>
+    /// Kafka producer service.
+    /// </summary>
     public class ProducerService : IProducerService
     {
         private readonly ILogger<ProducerService> _logger;
         private readonly IProducer<Null, ImageMessage> _producer;
         private readonly Dictionary<string, string> _topics = [];
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProducerService"/> class.
+        /// </summary>
+        /// <param name="config">The <see cref="IConfiguration"/> interface for accessing the application configuration.</param>
+        /// <param name="logger">The interface <see cref="ILogger{ProducerService}"/> for logging.</param>
+        /// <param name="producer">Kafka producer.</param>
         public ProducerService(IConfiguration config, ILogger<ProducerService> logger, IProducer<Null, ImageMessage> producer)
         {
             _logger = logger;
@@ -23,11 +32,19 @@ namespace MessageRouter.Services
             }
         }
 
+        /// <summary>
+        /// Get topic name from config. 
+        /// </summary>
+        /// <param name="config">The <see cref="IConfiguration"/> interface for accessing the application configuration.</param>
+        /// <param name="key">Key name topic.</param>
+        /// <returns>Name topic from config.</returns>
+        /// <exception cref="InvalidOperationException">Error getting name topic from config.</exception>
         private string GetTopicFromConfig(IConfiguration config, string key)
         {
             return config[key] ?? throw new InvalidOperationException($"{key} not configured in appsettings.");
         }
 
+        /// <inheritdoc cref="IProducerService.SendImageMessage(TopicName, ImageMessage)"/>
         public async Task<bool> SendImageMessage(TopicName key, ImageMessage imageMessage)
         {
             if (imageMessage == null)

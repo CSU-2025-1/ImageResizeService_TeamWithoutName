@@ -3,6 +3,9 @@ using MessageRouter.Services.Contracts;
 
 namespace MessageRouter.Services
 {
+    /// <summary>
+    /// Service for processing image.
+    /// </summary>
     public class ImageProcessingService : IImageProcessingService
     {
         private readonly ILogger<ImageProcessingService> _logger;
@@ -10,6 +13,13 @@ namespace MessageRouter.Services
         private readonly IImageDatabaseService _imageDatabaseService;
         private readonly ICacheService _cacheService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImageProcessingService"/> class.
+        /// </summary>
+        /// <param name="logger">The interface <see cref="ILogger{ImageProcessingService}"/> for logging.</param>
+        /// <param name="producerService">Kafka producer service.</param>
+        /// <param name="imageDatabaseService">Image database sevice.</param>
+        /// <param name="cacheService">Cache service.</param>
         public ImageProcessingService(
             ILogger<ImageProcessingService> logger, 
             IProducerService producerService, 
@@ -23,6 +33,7 @@ namespace MessageRouter.Services
             _cacheService = cacheService;
         }
 
+        /// <inheritdoc cref="IImageProcessingService.ProcessingImageAsync(ImageMessage)"/>
         public async Task<bool> ProcessingImageAsync(ImageMessage imageMessage)
         {
             try

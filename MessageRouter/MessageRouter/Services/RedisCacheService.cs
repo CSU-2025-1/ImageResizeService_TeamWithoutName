@@ -1,26 +1,29 @@
 ﻿using MessageRouter.Model;
 using MessageRouter.Services.Contracts;
 using StackExchange.Redis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MessageRouter.Services
 {
+    /// <summary>
+    /// Service for working with Redis.
+    /// </summary>
     public class RedisCacheService : ICacheService
     {
         private readonly IDatabase _db;
         private readonly ILogger<RedisCacheService> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RedisCacheService"/> class.
+        /// </summary>
+        /// <param name="redis">Connection redis.</param>
+        /// <param name="logger">A logger for recording information about the service.</param>
         public RedisCacheService(IConnectionMultiplexer redis, ILogger<RedisCacheService> logger)
         {
             _db = redis.GetDatabase();
             _logger = logger;
-
         }
 
+        /// <inheritdoc cref="ICacheService.SaveImage(ImageCache)"/>
         public bool SaveImage(ImageCache imageCache)
         {
             try
