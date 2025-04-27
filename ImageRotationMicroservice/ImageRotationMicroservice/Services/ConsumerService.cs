@@ -1,9 +1,13 @@
 ﻿using Confluent.Kafka;
-using ImageRotationMicroservice.Kafka.Models;
-using ImageRotationMicroservice.Services;
+using ImageRotationMicroservice.Models.ImageMessage;
+using ImageRotationMicroservice.Services.Contract;
 
-namespace ImageRotationMicroservice.Kafka.Services
+namespace ImageRotationMicroservice.Services
 {
+    /// <summary>
+    /// The `ConsumerService' is a background service that consumes messages from a Kafka topic,
+    /// performs image rotating, and sends the rotated image to another Kafka topic.
+    /// </summary>
     public class ConsumerService : BackgroundService
     {
         private readonly ILogger<ConsumerService> _logger;
@@ -11,8 +15,17 @@ namespace ImageRotationMicroservice.Kafka.Services
         private readonly string _topicKey = "KafkaTopics:RotatorImage";
         private readonly string _topic;
         private readonly IProducerService _producerService;
-
         private readonly IImageRotationService _imageRotationService;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConsumerService"/> class.
+        /// </summary>
+        /// <param name="config">The <see cref="IConfiguration"/> interface for accessing the application configuration.</param>
+        /// <param name="logger">The interface <see cref="ILogger{ConsumerService}"/> for logging.</param>
+        /// <param name="consumer">Interface <see cref="IConsumer{Null, ImageMessage}"/> for receiving messages from a Kafka topic.</param>
+        /// <param name="imageResizeService">The <see cref="IImageResizeService"/> interface for image resizing.</param>
+        /// <param name="producerService">The <see cref="IProducerService"/> interface for producer Kafka.</param>
+        /// <exception cref="InvalidOperationException">It is discarded if the <c>KafkaTopics key is not configured in the application configuration.:RouterImage</c>.</exception>
 
         public ConsumerService(
             IConfiguration config, 
@@ -29,6 +42,12 @@ namespace ImageRotationMicroservice.Kafka.Services
             _topic = config[_topicKey] ?? throw new InvalidOperationException($"{_topicKey} not configured in appsettings.");
         }
 
+        /// <summary>
+        /// The main method of running a background service. This method subscribes to a Kafka topic,
+        /// consumes messages, rotated the image, and sends the modified image to another topic.
+        /// </summary>
+        /// <param name="stoppingToken">The `CancellationToken' that signals the need to stop the service.</param>
+        /// <returns>A task representing an asynchronous operation.</returns>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _consumer.Subscribe(_topic);
@@ -49,7 +68,7 @@ namespace ImageRotationMicroservice.Kafka.Services
 
                         _logger.LogInformation($"Image rotated successfully.");
 
-                        bool answerFromProducer = await _producerService.SendToImageResized(
+                        bool answerFromProducer = await _producerService.SendToImageRotated(
                             new ImageMessage
                             {
                                 Id = imageMessage.Id,
@@ -91,6 +110,11 @@ namespace ImageRotationMicroservice.Kafka.Services
             }
         }
 
+        /// <summary>
+        /// Converts a Base64 string to an 'IFormFile` object.
+        /// </summary>
+        /// <param name="base64String">The Base64 string representing the image.</param>
+        /// <returns>The <see cref="IFormFile"/> object representing the image.</returns>
         private IFormFile ConvertBase64ToIFormFile(string base64String)
         {
             var base64Data = base64String.Substring(base64String.IndexOf(',') + 1);
@@ -108,6 +132,7 @@ namespace ImageRotationMicroservice.Kafka.Services
             return formFile;
         }
 
+        /// <inheritdoc cref="BackgroundService.Dispose"/>
         public override void Dispose()
         {
             _consumer.Dispose();

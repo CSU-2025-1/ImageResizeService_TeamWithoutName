@@ -1,17 +1,26 @@
-﻿using SixLabors.ImageSharp;
+﻿using ImageRotationMicroservice.Services.Contract;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 
 namespace ImageRotationMicroservice.Services
 {
+    /// <summary>
+    /// Service for image rotation.
+    /// </summary>
     public class ImageRotationService : IImageRotationService
     {
         private readonly ILogger<ImageRotationService> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImageRotationService"/> class.
+        /// </summary>
+        /// <param name="logger">The interface <see cref="ILogger{ConsumerService}"/> for logging.</param>
         public ImageRotationService(ILogger<ImageRotationService> logger)
         {
             _logger = logger;
         }
 
+        /// <inheritdoc cref="IImageRotationService.RotateImageAsync(IFormFile, double)"/>
         public async Task<byte[]> RotateImageAsync(IFormFile imageFile, double angle)
         {
             try

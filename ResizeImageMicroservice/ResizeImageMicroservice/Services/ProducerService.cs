@@ -5,7 +5,7 @@ using ResizeImageMicroservice.Services.Contract;
 namespace ResizeImageMicroservice.Services
 {
     /// <summary>
-    /// Kafka producerService
+    /// Kafka producerService.
     /// </summary>
     public class ProducerService : IProducerService
     {
