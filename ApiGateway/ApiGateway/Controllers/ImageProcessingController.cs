@@ -129,11 +129,22 @@ namespace ApiGateway.Controllers
             }
         }
 
-
+        /// <summary>
+        /// Retrieves the image by the specified Id.
+        /// </summary>
+        /// <param name="id">ID of the image to receive.</param>
+        /// <returns>
+        /// An <see cref="IActionResult"/> representing the result of the registration attempt.<br/>
+        /// Returns:<br/>
+        ///   - <see cref="StatusCodes.Status200OK"/> (200 OK) Returns the image successfully.<br/>
+        ///   - <see cref="StatusCodes.Status400BadRequest"/> (400 BadRequest) Validation error.<br/>
+        ///   - <see cref="StatusCodes.Status404NotFound"/> (404 NotFound) The image with the specified ID has not been found or image processing has not been completed.<br/>
+        ///   - <see cref="StatusCodes.Status500InternalServerError"/> (500 Internal Server Error) The error is on the server side.<br/>
+        /// </returns>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetImage([FromRoute] string id)
         {

@@ -92,11 +92,8 @@ namespace ApiGateway
             });
 
             builder.Services.AddScoped<IAuthService, MongoAuthService>();
-
             builder.Services.AddScoped<ISavingService, RedisAndMongoSavingService>();
-
             builder.Services.AddScoped<IImageDatabaseService, ImageMongoDatabaseService>();
-
             builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
             var jwtSettings = builder.Configuration.GetSection("Jwt");

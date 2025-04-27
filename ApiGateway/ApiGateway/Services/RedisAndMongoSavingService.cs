@@ -3,12 +3,21 @@ using ApiGateway.Services.Contract;
 
 namespace ApiGateway.Services
 {
+    /// <summary>
+    /// A class that checks for images in Redis and MongoDB.
+    /// </summary>
     public class RedisAndMongoSavingService : ISavingService
     {
         private readonly ILogger<RedisAndMongoSavingService> _logger;
         private readonly IImageDatabaseService _imageDatabaseService;
         private readonly ICacheService _cacheService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RedisAndMongoSavingService"/> class.
+        /// </summary>
+        /// <param name="logger">A logger for recording information about the service.</param>
+        /// <param name="imageDatabaseService">Database service.</param>
+        /// <param name="cacheService">Cache service.</param>
         public RedisAndMongoSavingService(ILogger<RedisAndMongoSavingService> logger, IImageDatabaseService imageDatabaseService, ICacheService cacheService)
         {
             _logger = logger;
@@ -16,6 +25,7 @@ namespace ApiGateway.Services
             _cacheService = cacheService;
         }
 
+        /// <inheritdoc cref="ISavingService.CheckFull(ImageChecker)"/>
         public async Task<string> CheckFull(ImageChecker imageChecker)
         {
             try
@@ -37,6 +47,7 @@ namespace ApiGateway.Services
             }
         }
 
+        /// <inheritdoc cref="ISavingService.CheckId(string)"/>
         public async Task<(string, string)> CheckId(string id)
         {
             try
