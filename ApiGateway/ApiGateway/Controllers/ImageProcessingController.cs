@@ -3,10 +3,7 @@ using ApiGateway.Models.ImageMessage;
 using ApiGateway.Services.Contract;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.Logging;
 using NUlid;
-using System.IO;
 
 namespace ApiGateway.Controllers
 {
@@ -21,7 +18,6 @@ namespace ApiGateway.Controllers
     {
         private readonly ILogger<ImageProcessingController> _logger;
         private readonly ISendingService _producerService;
-        private readonly IImageDatabaseService _imageDatabaseService;
         private readonly IFormatService _formatService;
         private readonly ISavingService _savingService;
 
@@ -34,14 +30,12 @@ namespace ApiGateway.Controllers
             ILogger<ImageProcessingController> logger, 
             ISendingService producerService, 
             IFormatService formatService, 
-            IImageDatabaseService imageDatabaseService,
             ISavingService savingService
         )
         {
             _logger = logger;
             _producerService = producerService;
             _formatService = formatService;
-            _imageDatabaseService = imageDatabaseService;
             _savingService = savingService;
         }
 
@@ -75,7 +69,7 @@ namespace ApiGateway.Controllers
             }
             try
             {
-                var convertedImage = request.Image.ConvertToBase64(_logger);
+                var convertedImage = request.Image.ConvertToBase64WithoutMetadataAsync(_logger);
                 if(convertedImage.Result == null)
                 {
                     return StatusCode(StatusCodes.Status500InternalServerError, "Error with image.");
