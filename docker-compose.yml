@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   kafka:
     build:
@@ -17,10 +15,10 @@ services:
     networks:
       - mynetwork
     
-  api_gateway:
+  api_gateway1:
     build:
       context: ./ApiGateway/ApiGateway
-    container_name: api_gateway
+    container_name: api_gateway1
     depends_on:
       - redis
       - kafka
@@ -34,29 +32,72 @@ services:
     networks:
       - mynetwork
 
-  resizer_image:
+  api_gateway2:
     build:
-      context: ./ResizeImageMicroservice/ResizeImageMicroservice
-    container_name: resizer_image
+      context: ./ApiGateway/ApiGateway
+    container_name: api_gateway2
     depends_on:
+      - redis
       - kafka
+      - mongo-init
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
+      RedisConnectionString: "redis:6379"
     ports:
       - 50052:8080
     networks:
       - mynetwork
 
-  rotator_image:
+  resizer_image1:
     build:
-      context: ./ImageRotationMicroservice/ImageRotationMicroservice
-    container_name: rotator_image
+      context: ./ResizeImageMicroservice/ResizeImageMicroservice
+    container_name: resizer_image1
     depends_on:
       - kafka
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
     ports:
       - 50053:8080
+    networks:
+      - mynetwork
+
+  resizer_image2:
+    build:
+      context: ./ResizeImageMicroservice/ResizeImageMicroservice
+    container_name: resizer_image2
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50054:8080
+    networks:
+      - mynetwork
+
+  rotator_image1:
+    build:
+      context: ./ImageRotationMicroservice/ImageRotationMicroservice
+    container_name: rotator_image1
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50055:8080
+    networks:
+      - mynetwork
+
+  rotator_image2:
+    build:
+      context: ./ImageRotationMicroservice/ImageRotationMicroservice
+    container_name: rotator_image2
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - 50056:8080
     networks:
       - mynetwork
 
@@ -73,7 +114,7 @@ services:
       ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
       RedisConnectionString: "redis:6379"
     ports:
-      - 50054:8080
+      - 50057:8080
     networks:
       - mynetwork
 
@@ -131,6 +172,22 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    networks:
+      - mynetwork
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api_gateway1
+      - api_gateway2
+      - resizer_image1
+      - resizer_image2
+      - rotator_image1
+      - rotator_image2
     networks:
       - mynetwork
 
