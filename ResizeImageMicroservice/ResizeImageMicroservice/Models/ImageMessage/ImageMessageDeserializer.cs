@@ -1,7 +1,7 @@
 ﻿using Confluent.Kafka;
 using System.Text.Json;
 
-namespace MessageRouter.Model
+namespace ResizeImageMicroservice.Models.ImageMessage
 {
     /// <summary>
     /// Implementation of the <see cref="IDeserializer{ImageMessage}"/> interface for deserializing messages like <see cref="ImageMessage"/> from an array of bytes to an object.
@@ -44,7 +44,7 @@ namespace MessageRouter.Model
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deserialization ImageMessage");
-                throw; 
+                throw;
             }
         }
     }

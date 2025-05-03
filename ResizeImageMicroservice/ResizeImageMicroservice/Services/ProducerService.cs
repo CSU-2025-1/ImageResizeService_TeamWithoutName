@@ -1,8 +1,12 @@
 ﻿using Confluent.Kafka;
-using ImageRotationMicroservice.Kafka.Models;
+using ResizeImageMicroservice.Models.ImageMessage;
+using ResizeImageMicroservice.Services.Contract;
 
-namespace ImageRotationMicroservice.Kafka.Services
+namespace ResizeImageMicroservice.Services
 {
+    /// <summary>
+    /// Kafka producerService.
+    /// </summary>
     public class ProducerService : IProducerService
     {
         private readonly ILogger<ProducerService> _logger;
@@ -10,6 +14,12 @@ namespace ImageRotationMicroservice.Kafka.Services
         private readonly string _topicKey = "KafkaTopics:RouterImage";
         private readonly string _topic;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProducerService"/> class.
+        /// </summary>
+        /// <param name="config">The <see cref="IConfiguration"/> interface for accessing the application configuration.</param>
+        /// <param name="logger">The interface <see cref="ILogger{ProducerService}"/> for logging.</param>
+        /// <param name="producer">Kafka producer.</param>
         public ProducerService(
             IConfiguration config, 
             ILogger<ProducerService> logger, 
@@ -21,6 +31,7 @@ namespace ImageRotationMicroservice.Kafka.Services
             _topic = config[_topicKey] ?? throw new InvalidOperationException($"{_topicKey} not configured in appsettings.");
         }
 
+        /// <inheritdoc cref="IProducerService.SendToImageResized(ImageMessage)"/>
         public async Task<bool> SendToImageResized(ImageMessage imageMessage)
         {
             if (imageMessage == null)
@@ -42,3 +53,4 @@ namespace ImageRotationMicroservice.Kafka.Services
         }
     }
 }
+

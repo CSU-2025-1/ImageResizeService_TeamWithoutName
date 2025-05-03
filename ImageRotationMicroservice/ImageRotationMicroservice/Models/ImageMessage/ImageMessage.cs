@@ -1,9 +1,9 @@
-﻿namespace ApiGateway.Models
+﻿namespace ImageRotationMicroservice.Models.ImageMessage
 {
     /// <summary>
-    /// Represents the image model in the database.
+    /// Presents a message containing information about the image and its processing parameters.
     /// </summary>
-    public class ImageDatabase
+    public class ImageMessage
     {
         /// <summary>
         /// The unique identifier of the message.
@@ -16,7 +16,7 @@
         public string OriginalImage { get; set; }
 
         /// <summary>
-        /// The finish image is in Base64 format.
+        /// The image is to be processed (can be changed in the process). It is also available in Base64 format.
         /// </summary>
         public string Image { get; set; }
 
@@ -44,5 +44,15 @@
         /// The desired format of the resulting image (for example, JPEG, PNG, GIF).
         /// </summary>
         public string Format { get; set; }
+
+        /// <summary>
+        /// Indicates whether the image size needs to be resized.
+        /// </summary>
+        public bool IsNeedResize { get; set; }
+
+        /// <summary>
+        /// Indicates whether the image needs to be rotated.
+        /// </summary>
+        public bool IsNeedRotation { get; set; }
     }
 }

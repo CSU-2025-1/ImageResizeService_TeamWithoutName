@@ -3,10 +3,7 @@ using ApiGateway.Models.ImageMessage;
 using ApiGateway.Services.Contract;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.Logging;
 using NUlid;
-using System.IO;
 
 namespace ApiGateway.Controllers
 {
@@ -21,7 +18,6 @@ namespace ApiGateway.Controllers
     {
         private readonly ILogger<ImageProcessingController> _logger;
         private readonly ISendingService _producerService;
-        private readonly IImageDatabaseService _imageDatabaseService;
         private readonly IFormatService _formatService;
         private readonly ISavingService _savingService;
 
@@ -34,14 +30,12 @@ namespace ApiGateway.Controllers
             ILogger<ImageProcessingController> logger, 
             ISendingService producerService, 
             IFormatService formatService, 
-            IImageDatabaseService imageDatabaseService,
             ISavingService savingService
         )
         {
             _logger = logger;
             _producerService = producerService;
             _formatService = formatService;
-            _imageDatabaseService = imageDatabaseService;
             _savingService = savingService;
         }
 
@@ -75,7 +69,7 @@ namespace ApiGateway.Controllers
             }
             try
             {
-                var convertedImage = request.Image.ConvertToBase64(_logger);
+                var convertedImage = request.Image.ConvertToBase64WithoutMetadataAsync(_logger);
                 if(convertedImage.Result == null)
                 {
                     return StatusCode(StatusCodes.Status500InternalServerError, "Error with image.");
@@ -129,11 +123,22 @@ namespace ApiGateway.Controllers
             }
         }
 
-
+        /// <summary>
+        /// Retrieves the image by the specified Id.
+        /// </summary>
+        /// <param name="id">ID of the image to receive.</param>
+        /// <returns>
+        /// An <see cref="IActionResult"/> representing the result of the registration attempt.<br/>
+        /// Returns:<br/>
+        ///   - <see cref="StatusCodes.Status200OK"/> (200 OK) Returns the image successfully.<br/>
+        ///   - <see cref="StatusCodes.Status400BadRequest"/> (400 BadRequest) Validation error.<br/>
+        ///   - <see cref="StatusCodes.Status404NotFound"/> (404 NotFound) The image with the specified ID has not been found or image processing has not been completed.<br/>
+        ///   - <see cref="StatusCodes.Status500InternalServerError"/> (500 Internal Server Error) The error is on the server side.<br/>
+        /// </returns>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetImage([FromRoute] string id)
         {

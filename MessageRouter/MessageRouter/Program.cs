@@ -7,8 +7,16 @@ using StackExchange.Redis;
 
 namespace MessageRouter
 {
+    /// <summary>
+    /// The main class that contains the entry point and the application configuration.
+    /// </summary>
     public class Program
     {
+        /// <summary>
+        /// The main application method that performs Web API configuration, service registration, middleware configuration, and application launch.
+        /// </summary>
+        /// <param name="args">Command-line arguments passed to the application.</param>
+        /// <exception cref="InvalidOperationException">Thrown when required configuration settings, such as Kafka BootstrapServers, are missing from the application's configuration.</exception>
         public static void Main(string[] args)
         {
             var builder = Host.CreateApplicationBuilder(args);
@@ -83,12 +91,12 @@ namespace MessageRouter
                 var redisConnectionString = builder.Configuration["RedisConnectionString"];
                 return ConnectionMultiplexer.Connect(redisConnectionString);
             });
+
             builder.Services.AddScoped<IImageDatabaseService, ImageMongoDatabaseService>();
             builder.Services.AddHostedService<ConsumerService>();
             builder.Services.AddSingleton<IImageProcessingService, ImageProcessingService>();
             builder.Services.AddSingleton<IProducerService, ProducerService>();
             builder.Services.AddScoped<ICacheService, RedisCacheService>();
-
 
             var host = builder.Build();
             host.Run();

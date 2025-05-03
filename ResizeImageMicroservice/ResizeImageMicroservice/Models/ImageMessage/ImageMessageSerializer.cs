@@ -1,8 +1,8 @@
 ﻿using Confluent.Kafka;
-using System.Text;
 using System.Text.Json;
+using System.Text;
 
-namespace MessageRouter.Model
+namespace ResizeImageMicroservice.Models.ImageMessage
 {
     /// <summary>
     /// Serializes an <see cref="ImageMessage"/> object into a byte array using JSON serialization.

@@ -17,13 +17,13 @@ namespace ApiGateway.Models
         /// The desired width of the image in pixels.
         /// </summary>
         [Range(1, int.MaxValue, ErrorMessage = "Width must be at least 1 pixel")]
-        public int? Width { get; set; }
+        public int? Width { get; set; } = 100;
 
         /// <summary>
         /// The desired image height in pixels.
         /// </summary>
         [Range(1, int.MaxValue, ErrorMessage = "Height must be at least 1 pixel")]
-        public int? Height { get; set; }
+        public int? Height { get; set; } = 100;
 
         /// <summary>
         /// Determines whether to keep the proportions of the image when resizing.

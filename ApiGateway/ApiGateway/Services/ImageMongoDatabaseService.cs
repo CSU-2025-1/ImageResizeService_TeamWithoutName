@@ -4,17 +4,26 @@ using MongoDB.Driver;
 
 namespace ApiGateway.Services
 {
+    /// <summary>
+    /// A class for working with the MongoDB image database.
+    /// </summary>
     public class ImageMongoDatabaseService : IImageDatabaseService
     {
         private readonly ILogger<ImageMongoDatabaseService> _logger;
         private readonly IMongoCollection<ImageDatabase> _images;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImageMongoDatabaseService"/> class.
+        /// </summary>
+        /// <param name="logger">The interface <see cref="ILogger{ImageMongoDatabaseService}"/> for logging.</param>
+        /// <param name="imageCollection">Interface <see cref="IMongoCollection{ImageDatabase}"/> for accessing a collection of images in MongoDB.</param>
         public ImageMongoDatabaseService(ILogger<ImageMongoDatabaseService> logger, IMongoCollection<ImageDatabase> imageCollection)
         {
             _logger = logger;
             _images = imageCollection;
         }
 
+        /// <inheritdoc cref="IImageDatabaseService.GetImageById(string)"/>
         public async Task<ImageDatabase> GetImageById(string id)
         {
             try
@@ -30,6 +39,7 @@ namespace ApiGateway.Services
             }
         }
 
+        /// <inheritdoc cref="IImageDatabaseService.GetImageByParams(ImageChecker)"/>
         public async Task<ImageDatabase> GetImageByParams(ImageChecker imageChecker)
         {
             try

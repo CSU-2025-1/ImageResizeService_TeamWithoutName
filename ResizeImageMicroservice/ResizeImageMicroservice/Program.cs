@@ -1,16 +1,23 @@
 
 using Confluent.Kafka;
-using ResizeImageMicroservice.Kafka.Models;
-using ResizeImageMicroservice.Kafka.Services;
+using ResizeImageMicroservice.Models.ImageMessage;
 using ResizeImageMicroservice.Services;
+using ResizeImageMicroservice.Services.Contract;
 
 namespace ResizeImageMicroservice
 {
+    /// <summary>
+    /// The main class that contains the entry point and the application configuration.
+    /// </summary>
     public class Program
     {
+        /// <summary>
+        /// The main application method that performs Web API configuration, service registration, middleware configuration, and application launch.
+        /// </summary>
+        /// <param name="args">Command-line arguments passed to the application.</param>
+        /// <exception cref="InvalidOperationException">Thrown when required configuration settings, such as Kafka BootstrapServers, are missing from the application's configuration.</exception>
         public static void Main(string[] args)
         {
-            //var builder = WebApplication.CreateBuilder(args);
             var builder = Host.CreateApplicationBuilder(args);
 
             builder.Services.AddLogging();
@@ -55,37 +62,12 @@ namespace ResizeImageMicroservice
 
                 var consumerBuilder = new ConsumerBuilder<Null, ImageMessage>(config)
                 .SetValueDeserializer(new ImageMessageDeserializer(sp.GetRequiredService<ILogger<ImageMessageDeserializer>>()));
-
                 return consumerBuilder.Build();
             });
-
 
             builder.Services.AddHostedService<ConsumerService>();
             builder.Services.AddSingleton<IImageResizeService, ImageResizeService>();
             builder.Services.AddSingleton<IProducerService, ProducerService>();
-
-            //builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            //builder.Services.AddEndpointsApiExplorer();
-            //builder.Services.AddSwaggerGen();
-
-            /*var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();*/
 
             var host = builder.Build();
             host.Run();

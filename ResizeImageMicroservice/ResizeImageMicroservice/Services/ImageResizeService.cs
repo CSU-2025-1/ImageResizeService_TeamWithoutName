@@ -1,19 +1,28 @@
 ﻿
+using ResizeImageMicroservice.Services.Contract;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 
 namespace ResizeImageMicroservice.Services
 {
+    /// <summary>
+    /// Service for resize image.
+    /// </summary>
     public class ImageResizeService : IImageResizeService
     {
         private readonly ILogger<ImageResizeService> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImageResizeService"/> class.
+        /// </summary>
+        /// <param name="logger">The interface <see cref="ILogger{ConsumerService}"/> for logging.</param>
         public ImageResizeService(ILogger<ImageResizeService> logger)
         {
             _logger = logger;
         }
 
+        /// <inheritdoc cref="IImageResizeService.ResizeImageAsync(IFormFile, int, int, bool)"/>
         public async Task<byte[]> ResizeImageAsync(IFormFile imageFile, int width, int height, bool preserveAspectRatio)
         {
             try {

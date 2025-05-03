@@ -1,34 +1,53 @@
 ﻿using Confluent.Kafka;
-using ImageRotationMicroservice.Kafka.Models;
-using ImageRotationMicroservice.Services;
+using ResizeImageMicroservice.Models.ImageMessage;
+using ResizeImageMicroservice.Services.Contract;
 
-namespace ImageRotationMicroservice.Kafka.Services
+namespace ResizeImageMicroservice.Services
 {
+    /// <summary>
+    /// The `ConsumerService' is a background service that consumes messages from a Kafka topic,
+    /// performs image resizing, and sends the resized image to another Kafka topic.
+    /// </summary>
     public class ConsumerService : BackgroundService
     {
         private readonly ILogger<ConsumerService> _logger;
         private readonly IConsumer<Null, ImageMessage> _consumer;
-        private readonly string _topicKey = "KafkaTopics:RotatorImage";
+        private readonly string _topicKey = "KafkaTopics:ResizerImage";
         private readonly string _topic;
         private readonly IProducerService _producerService;
+        private readonly IImageResizeService _imageResizeService;
 
-        private readonly IImageRotationService _imageRotationService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConsumerService"/> class.
+        /// </summary>
+        /// <param name="config">The <see cref="IConfiguration"/> interface for accessing the application configuration.</param>
+        /// <param name="logger">The interface <see cref="ILogger{ConsumerService}"/> for logging.</param>
+        /// <param name="consumerRouterImage">Interface <see cref="IConsumer{Null, ImageMessage}"/> for receiving messages from a Kafka topic.</param>
+        /// <param name="imageResizeService">The <see cref="IImageResizeService"/> interface for image resizing.</param>
+        /// <param name="producerService">The <see cref="IProducerService"/> interface for producer Kafka.</param>
+        /// <exception cref="InvalidOperationException">It is discarded if the <c>KafkaTopics key is not configured in the application configuration.:RouterImage</c>.</exception>
         public ConsumerService(
             IConfiguration config, 
             ILogger<ConsumerService> logger, 
-            IConsumer<Null, ImageMessage> consumer,
-            IImageRotationService imageResizeService, 
+            IConsumer<Null, ImageMessage> consumer, 
+            IImageResizeService imageResizeService, 
             IProducerService producerService
             )
         {
             _logger = logger;
             _consumer = consumer;
-            _imageRotationService = imageResizeService;
+            _imageResizeService = imageResizeService;
             _producerService = producerService;
             _topic = config[_topicKey] ?? throw new InvalidOperationException($"{_topicKey} not configured in appsettings.");
         }
 
+        /// <summary>
+        /// The main method of running a background service. This method subscribes to a Kafka topic,
+        /// consumes messages, resizes the image, and sends the modified image to another topic.
+        /// </summary>
+        /// <param name="stoppingToken">The `CancellationToken' that signals the need to stop the service.</param>
+        /// <returns>A task representing an asynchronous operation.</returns>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _consumer.Subscribe(_topic);
@@ -43,15 +62,16 @@ namespace ImageRotationMicroservice.Kafka.Services
                         var imageMessage = cr.Message.Value;
                         IFormFile imageFile = ConvertBase64ToIFormFile(imageMessage.Image);
 
-                        byte[] resizedImageBytes = await _imageRotationService.RotateImageAsync(
+                        byte[] resizedImageBytes = await _imageResizeService.ResizeImageAsync(
                                 imageFile,
-                                imageMessage.Angle);
+                                imageMessage.Width,
+                                imageMessage.Height,
+                                imageMessage.PreserveAspectRatio);
 
-                        _logger.LogInformation($"Image rotated successfully.");
+                        _logger.LogInformation($"Image resized successfully.  Resized image byte length: {resizedImageBytes.Length}");
 
                         bool answerFromProducer = await _producerService.SendToImageResized(
-                            new ImageMessage
-                            {
+                            new ImageMessage {
                                 Id = imageMessage.Id,
                                 OriginalImage = imageMessage.OriginalImage,
                                 Image = Convert.ToBase64String(resizedImageBytes),
@@ -60,20 +80,19 @@ namespace ImageRotationMicroservice.Kafka.Services
                                 PreserveAspectRatio = imageMessage.PreserveAspectRatio,
                                 Angle = imageMessage.Angle,
                                 Format = imageMessage.Format,
-                                IsNeedResize = imageMessage.IsNeedResize,
-                                IsNeedRotation = false
+                                IsNeedResize = false,
+                                IsNeedRotation = imageMessage.IsNeedRotation
                             }
                         );
 
                         if (!answerFromProducer)
                         {
-                            _logger.LogInformation("Rotated image was not sent.");
-                        }
-                        else
+                            _logger.LogInformation("Resized image was not sent.");
+                        } else
                         {
-                            _logger.LogInformation("Rotated image was sent.");
+                            _logger.LogInformation("Resize image was sent.");
                         }
-
+                        
                     }
                     catch (ConsumeException e)
                     {
@@ -81,7 +100,7 @@ namespace ImageRotationMicroservice.Kafka.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error during image rotating.");
+                        _logger.LogError(ex, "Error during image resizing.");
                     }
                 }
             }
@@ -91,23 +110,27 @@ namespace ImageRotationMicroservice.Kafka.Services
             }
         }
 
+        /// <summary>
+        /// Converts a Base64 string to an 'IFormFile` object.
+        /// </summary>
+        /// <param name="base64String">The Base64 string representing the image.</param>
+        /// <returns>The <see cref="IFormFile"/> object representing the image.</returns>
         private IFormFile ConvertBase64ToIFormFile(string base64String)
         {
             var base64Data = base64String.Substring(base64String.IndexOf(',') + 1);
-
             byte[] imageBytes = Convert.FromBase64String(base64Data);
-
             var memoryStream = new MemoryStream(imageBytes);
 
             IFormFile formFile = new FormFile(memoryStream, 0, memoryStream.Length, "image", "image.jpg")
             {
                 Headers = new HeaderDictionary(),
-                ContentType = "image/jpeg" 
+                ContentType = "image/jpeg"
             };
 
             return formFile;
         }
 
+        /// <inheritdoc cref="BackgroundService.Dispose"/>
         public override void Dispose()
         {
             _consumer.Dispose();

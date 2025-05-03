@@ -2,9 +2,13 @@
 
 namespace ApiGateway.Models
 {
+    /// <summary>
+    /// Represents a model for checking the presence of an image in the system.
+    /// </summary>
     public class ImageChecker
     {
         /// <summary>
+        /// Image.
         /// </summary>
         public string Image { get; set; }
 
