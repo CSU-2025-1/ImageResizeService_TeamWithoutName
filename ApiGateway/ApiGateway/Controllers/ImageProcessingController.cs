@@ -75,6 +75,12 @@ namespace ApiGateway.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError, "Error with image.");
                 }
 
+                if (request.Height == null && request.Width == null && request.Angle == null && request.PreserveAspectRatio == null && request.Format != null)
+                {
+                    byte[] formattedImageBytes = await _formatService.ConvertFormatAsync(convertedImage.Result, request.Format);
+                    return File(formattedImageBytes, $"image/{request.Format}");
+                }
+
                 var id = Ulid.NewUlid().ToString();
                 var format = request.Format == null ? _formatService.GetImageFormat(request.Image) : request.Format;
 
@@ -82,7 +88,7 @@ namespace ApiGateway.Controllers
                     Image = convertedImage.Result,
                     Height = request.Height ?? -1,
                     Width = request.Width ?? -1,
-                    PreserveAspectRatio = request.PreserveAspectRatio,
+                    PreserveAspectRatio = request.PreserveAspectRatio ?? false,
                     Angle = request.Angle ?? 361,
                     Format = format
                 });
@@ -100,7 +106,7 @@ namespace ApiGateway.Controllers
                     Image = convertedImage.Result,
                     Height = request.Height ?? -1,
                     Width = request.Width ?? -1,
-                    PreserveAspectRatio = request.PreserveAspectRatio,
+                    PreserveAspectRatio = request.PreserveAspectRatio ?? false,
                     Angle = request.Angle ?? 361,
                     Format = format
                 };

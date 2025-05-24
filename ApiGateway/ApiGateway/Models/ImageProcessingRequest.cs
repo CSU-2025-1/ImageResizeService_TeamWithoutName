@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ApiGateway.Models
 {
@@ -16,19 +17,21 @@ namespace ApiGateway.Models
         /// <summary>
         /// The desired width of the image in pixels.
         /// </summary>
+        [DefaultValue(100)]
         [Range(1, int.MaxValue, ErrorMessage = "Width must be at least 1 pixel")]
         public int? Width { get; set; } = 100;
 
         /// <summary>
         /// The desired image height in pixels.
         /// </summary>
+        [DefaultValue(100)]
         [Range(1, int.MaxValue, ErrorMessage = "Height must be at least 1 pixel")]
         public int? Height { get; set; } = 100;
 
         /// <summary>
         /// Determines whether to keep the proportions of the image when resizing.
         /// </summary>
-        public bool PreserveAspectRatio { get; set; }
+        public bool? PreserveAspectRatio { get; set; }
 
         /// <summary>
         /// The angle of rotation of the image in degrees. Acceptable values are from -360 to 360.
