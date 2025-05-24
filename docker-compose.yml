@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   kafka:
     build:
@@ -17,10 +15,10 @@ services:
     networks:
       - mynetwork
     
-  api_gateway:
+  api_gateway_1:
     build:
       context: ./ApiGateway/ApiGateway
-    container_name: api_gateway
+    container_name: api_gateway_1
     depends_on:
       - redis
       - kafka
@@ -29,8 +27,21 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
       RedisConnectionString: "redis:6379"
-    ports:
-      - 50051:8080
+    networks:
+      - mynetwork
+
+  api_gateway_2:
+    build:
+      context: ./ApiGateway/ApiGateway
+    container_name: api_gateway_2
+    depends_on:
+      - redis
+      - kafka
+      - mongo-init
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
+      RedisConnectionString: "redis:6379"
     networks:
       - mynetwork
 
@@ -43,7 +54,7 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
     ports:
-      - 50052:8080
+      - 50053:8080
     networks:
       - mynetwork
 
@@ -56,7 +67,7 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
     ports:
-      - 50053:8080
+      - 50055:8080
     networks:
       - mynetwork
 
@@ -73,7 +84,7 @@ services:
       ConnectionStringsMongoDB: "mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/?replicaSet=rs0"
       RedisConnectionString: "redis:6379"
     ports:
-      - 50054:8080
+      - 50057:8080
     networks:
       - mynetwork
 
@@ -131,6 +142,18 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    networks:
+      - mynetwork
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - api_gateway_1
+      - api_gateway_2
     networks:
       - mynetwork
 
