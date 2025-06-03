@@ -16,11 +16,6 @@
         RotatorImage,
 
         /// <summary>
-        /// The topic used to send messages to the image format modification service.
-        /// </summary>
-        FormatorImage,
-
-        /// <summary>
         /// A topic used for routing messages between different image processing services.
         /// </summary>
         RouterImage
@@ -46,8 +41,6 @@
                     return "KafkaTopics:ResizerImage";
                 case TopicName.RotatorImage:
                     return "KafkaTopics:RotatorImage";
-                case TopicName.FormatorImage:
-                    return "KafkaTopics:FormatorImage";
                 case TopicName.RouterImage:
                     return "KafkaTopics:RouterImage";
                 default:
